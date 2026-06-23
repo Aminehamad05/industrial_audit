@@ -22,6 +22,7 @@ export const registerRequestSchema = z.object({
   fullName: z.string().min(2).max(128),
   email:z.string(),
   role: z.enum(ROLES),
+  division: z.enum(["FMS", "A&D"]),
 });
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 

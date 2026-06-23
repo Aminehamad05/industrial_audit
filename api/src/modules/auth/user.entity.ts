@@ -22,6 +22,9 @@ export class User {
   @Column({ type: "varchar", length: 32 })
   role!: Role;
 
+  @Column({ type: "varchar", length: 64, default: "FMS" })
+  division!: "FMS" | "A&D";
+
   @Column({ name: "account_status", type: "varchar", length: 16, default: "Pending" })
   accountStatus!: AccountStatus;
 

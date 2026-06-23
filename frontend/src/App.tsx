@@ -1,11 +1,12 @@
-import Login from './pages/Login'
+import AppRoutes from './routes/AppRoutes'
+import { LanguageProvider } from './context/LanguageContext'
 import './App.css'
 
 function App() {
   return (
-    <>
-      <Login />
-    </>
+    <LanguageProvider>
+      <AppRoutes />
+    </LanguageProvider>
   )
 }
 

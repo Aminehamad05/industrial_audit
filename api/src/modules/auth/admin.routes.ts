@@ -110,3 +110,18 @@ adminRouter.patch("/users/:id/unblock", async (req, res) => {
     throw err;
   }
 });
+
+adminRouter.delete("/users/:id", async (req, res) => {
+  try {
+    const user = await userRepo.findOne({ where: { id: req.params.id } });
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+    await userRepo.remove(user);
+    res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    if (err instanceof AppError) return res.status(err.statusCode).json({ error: err.message });
+    console.error("Unexpected error during delete:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});

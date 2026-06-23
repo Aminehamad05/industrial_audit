@@ -28,6 +28,7 @@ async function seedSuperAdmin() {
     passwordHash,
     fullName: "Super Administrator",
     role: "Administrator",
+    division: "FMS",
     accountStatus: "Active", // pre-approved - this is the one account that skips the Pending workflow entirely
   });
 

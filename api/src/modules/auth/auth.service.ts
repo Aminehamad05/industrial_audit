@@ -26,7 +26,8 @@ export async function register(
   email: string,
   password: string,
   fullName: string,
-  role: Role
+  role: Role,
+  division: "FMS" | "A&D"
 ) {
   const existing = await userRepo.findOne({
     where: [{ username }, { email }],
@@ -43,6 +44,7 @@ export async function register(
     passwordHash,
     fullName,
     role,
+    division,
     accountStatus: "Pending",
   });
   await userRepo.save(user);
