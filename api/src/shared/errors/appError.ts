@@ -16,3 +16,20 @@ export class UsernameTakenError extends AppError {
     super(409, "Username is already taken");
   }
 }
+export class AccountPendingError extends AppError {
+  constructor() {
+    super(403, "Your account is awaiting administrator approval");
+  }
+}
+
+export class AccountBlockedError extends AppError {
+  constructor() {
+    super(403, "Your account has been blocked. Contact an administrator");
+  }
+}
+
+export class AccountRejectedError extends AppError {
+  constructor() {
+    super(403, "Your account request was not approved");
+  }
+}

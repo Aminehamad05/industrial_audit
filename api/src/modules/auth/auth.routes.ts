@@ -2,13 +2,13 @@ import { Router } from "express";
 import { login, register } from "./auth.service";
 import { loginRequestSchema, registerRequestSchema } from "../../shared/types/auth";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
-import { AppError } from "../../shared/errors/AppError";
+import { AppError } from "../../shared/errors/appError";
 import { success } from "zod";
 import fa from "zod/v4/locales/fa.cjs";
 
 export const authRouter = Router();
 
-authRouter.post("/register", requireAuth, requireRole(["Administrator"]), async (req, res) => {
+authRouter.post("/register", async (req, res) => {
   const parsed = registerRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid request body", details: parsed.error.format() });
@@ -19,7 +19,9 @@ authRouter.post("/register", requireAuth, requireRole(["Administrator"]), async 
       parsed.data.username,
       parsed.data.password,
       parsed.data.fullName,
+      parsed.data.email,
       parsed.data.role
+      
     );
     return res.status(201).json(result);
   } catch (err) {
@@ -38,7 +40,7 @@ authRouter.post("/login", async (req, res) => {
   }
 
   try {
-    const result = await login(parsed.data.username, parsed.data.password);
+    const result = await login(parsed.data.email, parsed.data.password);
     return res.status(200).json(result);
   } catch (err) {
     if (err instanceof AppError) {

@@ -12,7 +12,7 @@ declare global {
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-
+console.log(req.headers);
   if (!header?.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Missing or malformed Authorization header" });
   }

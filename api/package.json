@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "seed:super-admin": "tsx src/db/super_admin.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "db:generate": "drizzle-kit generate",

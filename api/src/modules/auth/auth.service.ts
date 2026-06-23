@@ -4,7 +4,7 @@ import type { StringValue } from "ms";
 import { AppDataSource } from "../../db/data-source";
 import { User } from "./user.entity";
 import { env } from "../../config/env";
-import { InvalidCredentialsError, UsernameTakenError } from "../../shared/errors/appError";
+import { InvalidCredentialsError,AccountRejectedError,AccountBlockedError,AccountPendingError ,UsernameTakenError } from "../../shared/errors/appError";
 import type { JwtPayload, Role } from "../../shared/types/auth";
 
 const BCRYPT_ROUNDS = 12;
@@ -23,41 +23,42 @@ export function verifyToken(token: string): JwtPayload {
 
 export async function register(
   username: string,
+  email: string,
   password: string,
   fullName: string,
   role: Role
 ) {
-  const existing = await userRepo.findOne({ where: { username } });
+  const existing = await userRepo.findOne({
+    where: [{ username }, { email }],
+  });
   if (existing) {
-    throw new UsernameTakenError();
+    throw new UsernameTakenError(); // consider a more general "AccountAlreadyExistsError" name now
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
   const user = userRepo.create({
     username,
+    email,
     passwordHash,
     fullName,
     role,
+    accountStatus: "Pending",
   });
   await userRepo.save(user);
 
-  const token = issueToken({ userId: user.id, role: user.role as Role });
-
+  // No token returned - the account isn't usable yet.
   return {
-    token,
-    user: { id: user.id, fullName: user.fullName, role: user.role as Role },
+    id: user.id,
+    fullName: user.fullName,
+    accountStatus: user.accountStatus,
   };
 }
 
-export async function login(username: string, password: string) {
-  const user = await userRepo.findOne({ where: { username } });
+export async function login(email: string, password: string) {
+  const user = await userRepo.findOne({ where: { email } });
 
-  if (!user || !user.isActive) {
-    // Dummy compare so "no such user" and "wrong password" take the
-    // same amount of time - otherwise response timing leaks which
-    // usernames exist.
-    await bcrypt.compare(password, "$2b$12$invalidsaltinvalidsaltinvalidsal");
+  if (!user ) {
     throw new InvalidCredentialsError();
   }
 
@@ -65,7 +66,9 @@ export async function login(username: string, password: string) {
   if (!passwordMatches) {
     throw new InvalidCredentialsError();
   }
-
+  if (user.accountStatus === "Pending") throw new AccountPendingError();
+  if (user.accountStatus === "Blocked") throw new AccountBlockedError();
+  if (user.accountStatus === "Rejected") throw new AccountRejectedError();
   const token = issueToken({ userId: user.id, role: user.role as Role });
 
   return {

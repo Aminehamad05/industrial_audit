@@ -1,5 +1,13 @@
-import { z } from "zod";
+import { email, z } from "zod";
 
+export const ACCOUNT_STATUSES = [
+  "Pending",
+  "Active",
+  "Blocked",
+  "Rejected",
+] as const;
+
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export const ROLES = [
   "Auditor",
   "Supervisor",
@@ -8,17 +16,17 @@ export const ROLES = [
 ] as const;
 
 export type Role = (typeof ROLES)[number];
-
 export const registerRequestSchema = z.object({
   username: z.string().min(3).max(64),
   password: z.string().min(8).max(128),
   fullName: z.string().min(2).max(128),
+  email:z.string(),
   role: z.enum(ROLES),
 });
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
 export const loginRequestSchema = z.object({
-  username: z.string().min(3).max(64),
+  email: z.string(),
   password: z.string().min(8).max(128),
 });
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
