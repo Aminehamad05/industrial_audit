@@ -158,17 +158,6 @@ const api = {
         },
       });
     },
-    deleteUser: async (userId: string): Promise<Response> => {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
-      return fetch(`${BASE_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-    },
   },
 };
 

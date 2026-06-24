@@ -7,7 +7,7 @@ import AuthCard from '../components/AuthCard';
 import Logo from '../components/Logo';
 import Input from '../components/Input';
 import { useLanguage } from '../context/LanguageContext';
-
+import { getHomeRouteForRole } from '../config/roleRoutes';
 interface ApiErrorResponse {
   error?: string;
   message?: string;
@@ -98,7 +98,7 @@ export const Login: React.FC = () => {
 
       setSuccessMsg(t('success_login'));
       if (data.token) {
-        const userObj = data.user || { fullName: 'Amine Hamed', role: 'Administrator' };
+        const userObj = data.user ;
         if (rememberMe) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(userObj));
@@ -108,12 +108,13 @@ export const Login: React.FC = () => {
           sessionStorage.setItem('user', JSON.stringify(userObj));
           localStorage.removeItem('hutch_remember_email');
         }
+         setTimeout(() => {
+           navigate(getHomeRouteForRole(userObj.role));
+         }, 500);
       }
 
       // Direct to main dashboard or show success
-      setTimeout(() => {
-        navigate("/home");
-      }, 1000);
+     
       
     } catch (err) {
       console.error(err);

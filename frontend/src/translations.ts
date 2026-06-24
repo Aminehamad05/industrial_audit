@@ -1,144 +1,242 @@
+
 export const translations = {
   fr: {
     // General
     hutchinson: "Hutchinson",
-    system_title: "Système d'audit industriel",
-    
+    system_title: "Plateforme d'audit industriel",
+
     // Login
-    login_title: "Bon retour",
-    login_subtitle: "Connectez-vous au système d'audit industriel",
-    email: "E-mail",
+    login_title: "Bienvenue",
+    login_subtitle: "Accédez à la plateforme d'audit industriel",
+    email: "Adresse e-mail",
     email_placeholder: "ex. amine_hamad@hutchinson.com",
     password: "Mot de passe",
     password_placeholder: "••••••••",
-    remember_me: "Se souvenir de moi",
+    remember_me: "Rester connecté",
     sign_in: "Se connecter",
     signing_in: "Connexion en cours...",
-    need_account: "Besoin d'un compte ?",
-    register_here: "S'inscrire ici",
+    need_account: "Vous n'avez pas de compte ?",
+    register_here: "Créer un compte",
 
     // Register
-    register_title: "Créer un compte",
-    register_subtitle: "Enregistrer un nouvel utilisateur",
-    fullname: "Nom complet",
+    register_title: "Création de compte",
+    register_subtitle: "Créer un nouveau compte utilisateur",
+    fullname: "Nom et prénom",
     fullname_placeholder: "ex. Amine Hamad",
-    username: "Nom d'utilisateur",
+    username: "Identifiant",
     username_placeholder: "ex. amine_hamad",
-    confirm_password: "Confirmer le mot de passe",
+    confirm_password: "Confirmation du mot de passe",
     confirm_password_placeholder: "Saisissez à nouveau votre mot de passe",
-    role: "Rôle",
+    role: "Fonction",
     division: "Division",
     create_account: "Créer le compte",
-    creating_account: "Création du compte...",
+    creating_account: "Création en cours...",
     back_to_login: "Retour à la connexion",
-    password_min_placeholder: "Min. 8 caractères",
+    password_min_placeholder: "Au moins 8 caractères",
 
     // Roles
     role_Auditor: "Auditeur",
-    role_Supervisor: "Superviseur",
+    role_Supervisor: "Responsable",
     role_MaintenanceTechnician: "Technicien de maintenance",
     role_Administrator: "Administrateur",
 
     // Divisions
-    division_FMS: "FMS (Systèmes de gestion des fluides)",
-    division_AD: "A&D (Aérospatiale & Défense)",
+    division_FMS: "FMS (Fluid Management Systems)",
+    division_AD: "A&D (Aerospace & Defense)",
 
     // Home / Dashboard
     welcome: "Bienvenue",
-    role_label: "Rôle",
+    role_label: "Fonction",
     logged_in_as: "Connecté en tant que",
     user_management: "Gestion des utilisateurs",
+
     all: "Tous",
     pending: "En attente",
     active: "Actifs",
     blocked: "Bloqués",
-    rejected: "Rejetés",
-    col_name: "Nom complet",
-    col_email: "E-mail",
-    col_role: "Rôle",
+    rejected: "Refusés",
+
+    col_name: "Nom",
+    col_email: "Adresse e-mail",
+    col_role: "Fonction",
     col_status: "Statut",
     col_actions: "Actions",
-    btn_approve: "Approuver",
-    btn_reject: "Rejeter",
+
+    btn_approve: "Valider",
+    btn_reject: "Refuser",
     btn_block: "Bloquer",
     btn_unblock: "Débloquer",
     btn_delete: "Supprimer",
+
     no_users: "Aucun utilisateur trouvé.",
-    err_fetch_users: "Erreur lors du chargement des utilisateurs",
+    err_fetch_users: "Impossible de charger les utilisateurs.",
 
     // Navigation and Logout
-    logout: "Se déconnecter",
+    logout: "Déconnexion",
     tab_dashboard: "Tableau de bord",
     tab_user_management: "Utilisateurs",
-    tab_audit_results: "Résultats d'audit",
+    tab_audit_results: "Résultats des audits",
+
     coming_soon: "Bientôt disponible",
-    coming_soon_desc: "Cette section est en cours de développement.",
+    coming_soon_desc:
+      "Cette fonctionnalité est actuellement en cours de développement.",
+
+    // Auditor tabs
+    tab_my_audits: "Mes audits",
+    tab_findings: "Constats",
+    tab_reports: "Rapports",
+
+    // Severity badges
+    severity_Low: "Faible",
+    severity_Medium: "Moyen",
+    severity_High: "Élevé",
+    severity_Critical: "Critique",
+
+    // Finding status badges
+    finding_status_Open: "Ouvert",
+    finding_status_In_Review: "En cours",
+    finding_status_Closed: "Fermé",
+
+    // Audit status badges
+    audit_status_Planned: "Planifié",
+    audit_status_In_Progress: "En cours",
+    audit_status_Completed: "Terminé",
+
+    // Report status badges
+    report_status_Draft: "Brouillon",
+    report_status_Submitted: "Soumis",
+
+    // Auditor columns
+    col_audit: "Audit",
+    col_plant: "Site",
+    col_type: "Type",
+    col_due_date: "Date d'échéance",
+    col_id: "ID",
+    col_severity: "Sévérité",
+    col_report: "Rapport",
+    col_date: "Date",
+
+    // Auditor buttons
+    btn_open: "Ouvrir",
+    btn_continue: "Continuer",
+    btn_submit: "Soumettre",
+    btn_view: "Voir",
+    btn_download_pdf: "Télécharger PDF",
+    submitted: "Soumis",
+
+    // Auditor page titles & descriptions
+    my_audits: "Mes audits",
+    my_audits_desc: "Consultez et gérez vos audits assignés.",
+    findings: "Constats",
+    findings_desc: "Examinez et suivez les constats d'audit.",
+    reports: "Rapports",
+    reports_desc: "Consultez et téléchargez les rapports d'audit.",
+    assigned_audits: "Assignés",
+    completed_audits: "Terminés",
+    pending_audits: "En attente",
+    open_findings: "Constats ouverts",
+    upcoming_audits: "Audits à venir",
+    recent_findings: "Constats récents",
+    auditor_summary: "Vous avez {assigned} audits assignés, {dueToday} pour aujourd'hui, {openFindings} constats ouverts et {pendingReports} rapports en attente de soumission.",
+
+    // Auditor empty states
+    no_audits: "Aucun audit trouvé",
+    no_audits_desc: "Aucun audit ne correspond au filtre actuel.",
+    no_findings: "Aucun constat trouvé",
+    no_findings_desc: "Aucun constat ne correspond au filtre actuel.",
+    no_reports: "Aucun rapport trouvé",
+    no_reports_desc: "Aucun rapport n'est encore disponible.",
+
+    // Auditor error messages
+    err_fetch_audits: "Impossible de charger les audits.",
+    err_fetch_findings: "Impossible de charger les constats.",
+    err_fetch_reports: "Impossible de charger les rapports.",
 
     // Statuses
     status_Pending: "En attente",
     status_Active: "Actif",
     status_Blocked: "Bloqué",
-    status_Rejected: "Rejeté",
+    status_Rejected: "Refusé",
 
     // Validation Errors
-    err_email_required: "L'e-mail est requis",
-    err_email_invalid: "Veuillez entrer une adresse e-mail valide",
-    err_password_required: "Le mot de passe est requis",
-    err_password_min: "Le mot de passe doit comporter au moins 8 caractères",
-    err_fullname_required: "Le nom complet est requis",
-    err_fullname_min: "Le nom complet doit comporter au moins 2 caractères",
-    err_username_required: "Le nom d'utilisateur est requis",
-    err_username_min: "Le nom d'utilisateur doit comporter au moins 3 caractères",
-    err_confirm_password_required: "Veuillez confirmer votre mot de passe",
-    err_confirm_password_mismatch: "Les mots de passe ne correspondent pas",
-    err_division_required: "La division est requise",
+    err_email_required: "L'adresse e-mail est obligatoire.",
+    err_email_invalid: "Veuillez saisir une adresse e-mail valide.",
+    err_password_required: "Le mot de passe est obligatoire.",
+    err_password_min:
+      "Le mot de passe doit contenir au moins 8 caractères.",
+    err_fullname_required: "Le nom et prénom sont obligatoires.",
+    err_fullname_min:
+      "Le nom et prénom doivent contenir au moins 2 caractères.",
+    err_username_required: "L'identifiant est obligatoire.",
+    err_username_min:
+      "L'identifiant doit contenir au moins 3 caractères.",
+    err_confirm_password_required:
+      "Veuillez confirmer votre mot de passe.",
+    err_confirm_password_mismatch:
+      "Les mots de passe ne correspondent pas.",
+    err_division_required:
+      "Veuillez sélectionner une division.",
 
     // Alert & Server Errors
-    success_login: "Connexion réussie !",
-    success_register: "Compte créé avec succès !",
-    err_connection: "Impossible de se connecter au serveur. Veuillez vérifier si le backend API est démarré.",
-    err_registration_failed: "L'inscription a échoué",
-    
+    success_login: "Connexion réussie.",
+    success_register: "Compte créé avec succès.",
+
+    err_connection:
+      "Connexion au serveur impossible. Vérifiez que l'API est bien démarrée.",
+
+    err_registration_failed:
+      "La création du compte a échoué.",
+
     // Backend Mapped Errors
-    "Invalid username or password": "E-mail ou mot de passe invalide",
-    "Username is already taken": "Le nom d'utilisateur est déjà pris",
-    "Your account is awaiting administrator approval": "Votre compte est en attente d'approbation par l'administrateur",
-    "Your account has been blocked. Contact an administrator": "Votre compte a été bloqué. Contactez un administrateur",
-    "Your account request was not approved": "Votre demande de compte n'a pas été approuvée",
+    "Invalid username or password":
+      "Adresse e-mail ou mot de passe incorrect.",
+
+    "Username is already taken":
+      "Cet identifiant est déjà utilisé.",
+
+    "Your account is awaiting administrator approval":
+      "Votre compte est en attente de validation par un administrateur.",
+
+    "Your account has been blocked. Contact an administrator":
+      "Votre compte a été bloqué. Veuillez contacter un administrateur.",
+
+    "Your account request was not approved":
+      "Votre demande de création de compte a été refusée."
   },
+
   en: {
     // General
     hutchinson: "Hutchinson",
-    system_title: "Industrial Audit System",
+    system_title: "Industrial Audit Platform",
 
     // Login
     login_title: "Welcome Back",
-    login_subtitle: "Sign in to the Industrial Audit System",
-    email: "Email",
+    login_subtitle: "Access the Industrial Audit Platform",
+    email: "Email Address",
     email_placeholder: "e.g. amine_hamad@hutchinson.com",
     password: "Password",
     password_placeholder: "••••••••",
-    remember_me: "Remember me",
+    remember_me: "Keep me signed in",
     sign_in: "Sign In",
     signing_in: "Signing in...",
-    need_account: "Need an account?",
-    register_here: "Register here",
+    need_account: "Don't have an account?",
+    register_here: "Create an account",
 
     // Register
     register_title: "Create Account",
-    register_subtitle: "Register a new user",
+    register_subtitle: "Create a new user account",
     fullname: "Full Name",
     fullname_placeholder: "e.g. Amine Hamad",
     username: "Username",
     username_placeholder: "e.g. amine_hamad",
     confirm_password: "Confirm Password",
     confirm_password_placeholder: "Re-enter your password",
-    role: "Role",
+    role: "Position",
     division: "Division",
     create_account: "Create Account",
-    creating_account: "Creating Account...",
-    back_to_login: "Back to Login",
-    password_min_placeholder: "Min. 8 characters",
+    creating_account: "Creating account...",
+    back_to_login: "Back to Sign In",
+    password_min_placeholder: "At least 8 characters",
 
     // Roles
     role_Auditor: "Auditor",
@@ -152,34 +250,111 @@ export const translations = {
 
     // Home / Dashboard
     welcome: "Welcome",
-    role_label: "Role",
+    role_label: "Position",
     logged_in_as: "Logged in as",
     user_management: "User Management",
+
     all: "All",
     pending: "Pending",
     active: "Active",
     blocked: "Blocked",
     rejected: "Rejected",
-    col_name: "Full Name",
-    col_email: "Email",
-    col_role: "Role",
+
+    col_name: "Name",
+    col_email: "Email Address",
+    col_role: "Position",
     col_status: "Status",
     col_actions: "Actions",
+
     btn_approve: "Approve",
     btn_reject: "Reject",
     btn_block: "Block",
     btn_unblock: "Unblock",
     btn_delete: "Delete",
+
     no_users: "No users found.",
-    err_fetch_users: "Error loading users",
+    err_fetch_users: "Unable to load users.",
 
     // Navigation and Logout
-    logout: "Logout",
+    logout: "Sign Out",
     tab_dashboard: "Dashboard",
     tab_user_management: "Users",
     tab_audit_results: "Audit Results",
+
     coming_soon: "Coming Soon",
-    coming_soon_desc: "This section is currently under development.",
+    coming_soon_desc:
+      "This feature is currently under development.",
+
+    // Auditor tabs
+    tab_my_audits: "My Audits",
+    tab_findings: "Findings",
+    tab_reports: "Reports",
+
+    // Severity badges
+    severity_Low: "Low",
+    severity_Medium: "Medium",
+    severity_High: "High",
+    severity_Critical: "Critical",
+
+    // Finding status badges
+    finding_status_Open: "Open",
+    finding_status_In_Review: "In Review",
+    finding_status_Closed: "Closed",
+
+    // Audit status badges
+    audit_status_Planned: "Planned",
+    audit_status_In_Progress: "In Progress",
+    audit_status_Completed: "Completed",
+
+    // Report status badges
+    report_status_Draft: "Draft",
+    report_status_Submitted: "Submitted",
+
+    // Auditor columns
+    col_audit: "Audit",
+    col_plant: "Plant",
+    col_type: "Type",
+    col_due_date: "Due Date",
+    col_id: "ID",
+    col_severity: "Severity",
+    col_report: "Report",
+    col_date: "Date",
+
+    // Auditor buttons
+    btn_open: "Open",
+    btn_continue: "Continue",
+    btn_submit: "Submit",
+    btn_view: "View",
+    btn_download_pdf: "Download PDF",
+    submitted: "Submitted",
+
+    // Auditor page titles & descriptions
+    my_audits: "My Audits",
+    my_audits_desc: "View and manage your assigned audits.",
+    findings: "Findings",
+    findings_desc: "Review and track audit findings.",
+    reports: "Reports",
+    reports_desc: "View and download audit reports.",
+    assigned_audits: "Assigned",
+    completed_audits: "Completed",
+    pending_audits: "Pending",
+    open_findings: "Open Findings",
+    upcoming_audits: "Upcoming Audits",
+    recent_findings: "Recent Findings",
+    auditor_summary: "You have {assigned} audits assigned, {dueToday} due today, {openFindings} open findings, and {pendingReports} reports awaiting submission.",
+
+    // Auditor empty states
+    no_audits: "No audits found",
+    no_audits_desc: "No audits match the current filter.",
+    no_findings: "No findings found",
+    no_findings_desc: "No findings match the current filter.",
+    no_reports: "No reports found",
+    no_reports_desc: "No reports are available yet.",
+
+    // Auditor error messages
+    err_fetch_audits: "Unable to load audits.",
+    err_fetch_findings: "Unable to load findings.",
+    err_fetch_reports: "Unable to load reports.",
 
     // Statuses
     status_Pending: "Pending",
@@ -188,32 +363,53 @@ export const translations = {
     status_Rejected: "Rejected",
 
     // Validation Errors
-    err_email_required: "Email is required",
-    err_email_invalid: "Please enter a valid email address",
-    err_password_required: "Password is required",
-    err_password_min: "Password must be at least 8 characters",
-    err_fullname_required: "Full name is required",
-    err_fullname_min: "Full name must be at least 2 characters",
-    err_username_required: "Username is required",
-    err_username_min: "Username must be at least 3 characters",
-    err_confirm_password_required: "Please confirm your password",
-    err_confirm_password_mismatch: "Passwords do not match",
-    err_division_required: "Division is required",
+    err_email_required: "Email address is required.",
+    err_email_invalid:
+      "Please enter a valid email address.",
+    err_password_required: "Password is required.",
+    err_password_min:
+      "Password must be at least 8 characters long.",
+    err_fullname_required: "Full name is required.",
+    err_fullname_min:
+      "Full name must contain at least 2 characters.",
+    err_username_required: "Username is required.",
+    err_username_min:
+      "Username must contain at least 3 characters.",
+    err_confirm_password_required:
+      "Please confirm your password.",
+    err_confirm_password_mismatch:
+      "Passwords do not match.",
+    err_division_required:
+      "Please select a division.",
 
     // Alert & Server Errors
-    success_login: "Login successful!",
-    success_register: "Account created successfully!",
-    err_connection: "Cannot connect to the server. Please check if the API backend is running.",
-    err_registration_failed: "Registration failed",
+    success_login: "Successfully signed in.",
+    success_register: "Account created successfully.",
+
+    err_connection:
+      "Unable to connect to the server. Please ensure the API backend is running.",
+
+    err_registration_failed:
+      "Account creation failed.",
 
     // Backend Mapped Errors
-    "Invalid username or password": "Invalid email or password",
-    "Username is already taken": "Username is already taken",
-    "Your account is awaiting administrator approval": "Your account is awaiting administrator approval",
-    "Your account has been blocked. Contact an administrator": "Your account has been blocked. Contact an administrator",
-    "Your account request was not approved": "Your account request was not approved",
+    "Invalid username or password":
+      "Invalid email address or password.",
+
+    "Username is already taken":
+      "This username is already in use.",
+
+    "Your account is awaiting administrator approval":
+      "Your account is awaiting administrator approval.",
+
+    "Your account has been blocked. Contact an administrator":
+      "Your account has been blocked. Please contact an administrator.",
+
+    "Your account request was not approved":
+      "Your account request has been declined."
   }
 };
 
 export type Language = 'fr' | 'en';
 export type TranslationKey = keyof typeof translations.fr;
+
