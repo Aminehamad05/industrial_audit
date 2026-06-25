@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
 import { ProtectedRoute } from '../components/ProtectedRouteProps';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import SupervisorDashboard from '../pages/SupervisorDashboard';
-import AuditorDashboard from '../pages/AuditorDashboard';
+import AuditorDashboard from '../pages/auditor/AuditorDashboard';
 import TechnicianDashboard from '../pages/TechnicianDashboard';
 
 const AppRoutes = () => {

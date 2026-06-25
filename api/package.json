@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "seed:super-admin": "tsx src/db/super_admin.ts",
+    "seed:super-admin-direct": "tsx src/db/create_super_admin_direct.ts",
+    "seed:audits": "tsx src/db/seed_audit_data.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "db:generate": "drizzle-kit generate",

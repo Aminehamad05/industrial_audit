@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, AlertCircle } from 'lucide-react';
-import api from '../services/api.service';
-import AuthLayout from '../components/AuthLayout';
-import AuthCard from '../components/AuthCard';
-import Logo from '../components/Logo';
-import Input from '../components/Input';
-import { useLanguage } from '../context/LanguageContext';
-import { getHomeRouteForRole } from '../config/roleRoutes';
+import api from '../../services/api.service';
+import AuthLayout from '../../components/AuthLayout';
+import AuthCard from '../../components/AuthCard';
+import Logo from '../../components/Logo';
+import Input from '../../components/Input';
+import { useLanguage } from '../../context/LanguageContext';
+import { getHomeRouteForRole } from '../../config/roleRoutes';
 interface ApiErrorResponse {
   error?: string;
   message?: string;

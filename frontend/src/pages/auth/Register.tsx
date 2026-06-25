@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
-import api from '../services/api.service';
-import AuthLayout from '../components/AuthLayout';
-import AuthCard from '../components/AuthCard';
-import Logo from '../components/Logo';
-import Input from '../components/Input';
-import { useLanguage } from '../context/LanguageContext';
+import api from '../../services/api.service';
+import AuthLayout from '../../components/AuthLayout';
+import AuthCard from '../../components/AuthCard';
+import Logo from '../../components/Logo';
+import Input from '../../components/Input';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ApiErrorResponse {
   error?: string;

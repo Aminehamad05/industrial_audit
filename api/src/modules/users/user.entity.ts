@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,JoinColumn,ManyToOne } from "typeorm";
 import type { Role } from "../../shared/types/auth";
 import type { AccountStatus } from "../../shared/types/auth";
+import {Plant} from "../plants/enitites/plant.entities"
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn("uuid")
@@ -22,8 +23,12 @@ export class User {
   @Column({ type: "varchar", length: 32 })
   role!: Role;
 
-  @Column({ type: "varchar", length: 64, default: "FMS" })
-  division!: "FMS" | "A&D";
+  @ManyToOne(() => Plant, plant => plant.users, {
+  nullable: true,
+  })
+
+  @JoinColumn({ name: "plant_id" })
+  plant!: Plant | null;
 
   @Column({ name: "account_status", type: "varchar", length: 16, default: "Pending" })
   accountStatus!: AccountStatus;

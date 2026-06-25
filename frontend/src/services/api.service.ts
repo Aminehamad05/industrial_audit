@@ -159,6 +159,84 @@ const api = {
       });
     },
   },
+  audits: {
+    dashboard: async (): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/audits/dashboard`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    list: async (status?: string): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const url = status ? `${BASE_URL}/audits?status=${status}` : `${BASE_URL}/audits`;
+      return fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    getById: async (id: number): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/audits/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    create: async (data: Record<string, unknown>): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/audits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+    },
+    createDetails: async (auditId: number, details: Record<string, unknown>[]): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/audits/${auditId}/details`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(details),
+      });
+    },
+    reassign: async (auditId: number, auditorId: string): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/audits/${auditId}/reassign`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ auditorId }),
+      });
+    },
+  },
+  plants: {
+    list: async (): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/plants`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+  },
 };
 
 export default api;

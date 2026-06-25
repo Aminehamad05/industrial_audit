@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import bcrypt from "bcryptjs";
 import { AppDataSource } from "./data-source";
-import { User } from "../modules/auth/user.entity";
+import { User } from "../modules/users/user.entity";
 
 const BCRYPT_ROUNDS = 12;
 

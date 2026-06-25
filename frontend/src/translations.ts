@@ -74,12 +74,58 @@ export const translations = {
     // Navigation and Logout
     logout: "Déconnexion",
     tab_dashboard: "Tableau de bord",
+    tab_create_audit: "Créer un audit",
     tab_user_management: "Utilisateurs",
     tab_audit_results: "Résultats des audits",
 
     coming_soon: "Bientôt disponible",
     coming_soon_desc:
       "Cette fonctionnalité est actuellement en cours de développement.",
+
+    // Admin KPI
+    total_audits: "Audits totaux",
+    upcoming_audits: "À venir",
+    in_progress_audits: "En cours",
+    completed_audits: "Terminés",
+
+    // Create Audit
+    create_audit: "Créer un audit",
+    create_audit_desc: "Définissez les informations générales de l'audit.",
+    define_questions: "Définir les questions",
+    define_questions_desc: "Ajoutez des groupes et des questions pour cet audit.",
+    audit_type: "Type d'audit",
+    audit_target: "Cible",
+    auditor: "Auditeur",
+    start_date: "Date de début",
+    end_date: "Date de fin",
+    score: "Score",
+    select: "Sélectionner",
+    btn_create_audit: "Créer l'audit",
+    btn_save_questions: "Enregistrer les questions",
+    btn_cancel: "Annuler",
+    creating: "Création...",
+    saving: "Enregistrement...",
+    add_group: "Ajouter un groupe",
+    add_question: "Ajouter une question",
+    group: "Groupe",
+    group_name_fr: "Nom du groupe (FR)",
+    group_name_en: "Group name (EN)",
+    question_fr: "Question (FR)",
+    question_en: "Question (EN)",
+    audit_id: "Audit",
+    questions: "Questions",
+    back: "Retour",
+    photo_attached: "Photo jointe",
+    audit_results_desc: "Consultez les résultats détaillés des audits.",
+
+    // Errors
+    err_fill_required: "Veuillez remplir tous les champs obligatoires.",
+    err_create_audit: "Échec de la création de l'audit.",
+    err_fill_questions: "Veuillez remplir tous les champs des questions.",
+    err_save_questions: "Échec de l'enregistrement des questions.",
+    err_fetch_audit: "Impossible de charger les détails de l'audit.",
+    audit_created: "Audit créé avec succès !",
+    questions_saved: "Questions enregistrées avec succès !",
 
     // Auditor tabs
     tab_my_audits: "Mes audits",
@@ -278,12 +324,58 @@ export const translations = {
     // Navigation and Logout
     logout: "Sign Out",
     tab_dashboard: "Dashboard",
+    tab_create_audit: "Create Audit",
     tab_user_management: "Users",
     tab_audit_results: "Audit Results",
 
     coming_soon: "Coming Soon",
     coming_soon_desc:
       "This feature is currently under development.",
+
+    // Admin KPI
+    total_audits: "Total Audits",
+    upcoming_audits: "Upcoming",
+    in_progress_audits: "In Progress",
+    completed_audits: "Completed",
+
+    // Create Audit
+    create_audit: "Create Audit",
+    create_audit_desc: "Set the general audit information.",
+    define_questions: "Define Questions",
+    define_questions_desc: "Add groups and questions for this audit.",
+    audit_type: "Audit Type",
+    audit_target: "Target",
+    auditor: "Auditor",
+    start_date: "Start Date",
+    end_date: "End Date",
+    score: "Score",
+    select: "Select",
+    btn_create_audit: "Create Audit",
+    btn_save_questions: "Save Questions",
+    btn_cancel: "Cancel",
+    creating: "Creating...",
+    saving: "Saving...",
+    add_group: "Add Group",
+    add_question: "Add Question",
+    group: "Group",
+    group_name_fr: "Group Name (FR)",
+    group_name_en: "Group Name (EN)",
+    question_fr: "Question (FR)",
+    question_en: "Question (EN)",
+    audit_id: "Audit",
+    questions: "Questions",
+    back: "Back",
+    photo_attached: "Photo attached",
+    audit_results_desc: "View detailed audit results.",
+
+    // Errors
+    err_fill_required: "Please fill all required fields.",
+    err_create_audit: "Failed to create audit.",
+    err_fill_questions: "Please fill all question fields.",
+    err_save_questions: "Failed to save questions.",
+    err_fetch_audit: "Unable to load audit details.",
+    audit_created: "Audit created successfully!",
+    questions_saved: "Questions saved successfully!",
 
     // Auditor tabs
     tab_my_audits: "My Audits",

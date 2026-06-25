@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import { AppDataSource } from "../../db/data-source";
-import { User } from "./user.entity";
+import { User } from "../users/user.entity";
 import { env } from "../../config/env";
 import { InvalidCredentialsError,AccountRejectedError,AccountBlockedError,AccountPendingError ,UsernameTakenError } from "../../shared/errors/appError";
 import type { JwtPayload, Role } from "../../shared/types/auth";
