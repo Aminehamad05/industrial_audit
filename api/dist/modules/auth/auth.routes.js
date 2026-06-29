@@ -13,7 +13,7 @@ exports.authRouter.post("/register", async (req, res) => {
         return res.status(400).json({ error: "Invalid request body", details: parsed.error.format() });
     }
     try {
-        const result = await (0, auth_service_1.register)(parsed.data.username, parsed.data.email, parsed.data.password, parsed.data.fullName, parsed.data.role, parsed.data.division);
+        const result = await (0, auth_service_1.register)(parsed.data.username, parsed.data.email, parsed.data.password, parsed.data.fullName, parsed.data.role);
         return res.status(201).json(result);
     }
     catch (err) {

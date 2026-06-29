@@ -1,15 +1,12 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
-import { AppDataSource } from "../../db/data-source";
-import { User } from "../users/user.entity";
+import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
-import { InvalidCredentialsError,AccountRejectedError,AccountBlockedError,AccountPendingError ,UsernameTakenError } from "../../shared/errors/appError";
+import { InvalidCredentialsError, UsernameTakenError } from "../../shared/errors/appError";
 import type { JwtPayload, Role } from "../../shared/types/auth";
 
 const BCRYPT_ROUNDS = 12;
-
-const userRepo = AppDataSource.getRepository(User);
 
 function issueToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
@@ -26,55 +23,65 @@ export async function register(
   email: string,
   password: string,
   fullName: string,
-  role: Role,
-  division: "FMS" | "A&D"
+  role: Role
 ) {
-  const existing = await userRepo.findOne({
-    where: [{ username }, { email }],
+  const existing = await prisma.aspnet_Users.findFirst({
+    where: {
+      OR: [
+        { LoweredUserName: username.toLowerCase() },
+        { Email: email }
+      ]
+    },
   });
+
   if (existing) {
-    throw new UsernameTakenError(); // consider a more general "AccountAlreadyExistsError" name now
+    throw new UsernameTakenError();
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  const user = userRepo.create({
-    username,
-    email,
-    passwordHash,
-    fullName,
-    role,
-    division,
-    accountStatus: "Pending",
+  const user = await prisma.aspnet_Users.create({
+    data: {
+      UserName: username,
+      LoweredUserName: username.toLowerCase(),
+      Email: email,
+      Name: fullName,
+      passwordHash,
+      IsAnonymous: false,
+      LastActivityDate: new Date(),
+    },
   });
-  await userRepo.save(user);
 
-  // No token returned - the account isn't usable yet.
   return {
-    id: user.id,
-    fullName: user.fullName,
-    accountStatus: user.accountStatus,
+    id: user.UserId,
+    fullName: user.Name || "",
+    role: role,
   };
 }
 
 export async function login(email: string, password: string) {
-  const user = await userRepo.findOne({ where: { email } });
+  const user = await prisma.aspnet_Users.findFirst({
+    where: { Email: email },
+  });
 
-  if (!user ) {
+  if (!user || !user.passwordHash) {
     throw new InvalidCredentialsError();
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-  if (!passwordMatches) {
+  const passwordValid = await bcrypt.compare(password, user.passwordHash);
+
+  if (!passwordValid) {
     throw new InvalidCredentialsError();
   }
-  if (user.accountStatus === "Pending") throw new AccountPendingError();
-  if (user.accountStatus === "Blocked") throw new AccountBlockedError();
-  if (user.accountStatus === "Rejected") throw new AccountRejectedError();
-  const token = issueToken({ userId: user.id, role: user.role as Role });
+
+  const token = issueToken({ userId: user.UserId, role: "Auditor" as Role });
 
   return {
     token,
-    user: { id: user.id, fullName: user.fullName, role: user.role as Role },
+    user: {
+      id: user.UserId,
+      fullName: user.Name || user.UserName || "",
+      role: "Auditor" as Role,
+    },
   };
 }

@@ -72,18 +72,6 @@ export async function getPlantAudits(req: Request, res: Response) {
   }
 }
 
-export async function getPlantUsers(req: Request, res: Response) {
-  try {
-    const plantId = Number(req.params.id);
-    const users = await plantService.getPlantUsers(plantId);
-    res.status(200).json({ users });
-  } catch (err) {
-    if (err instanceof AppError) return res.status(err.statusCode).json({ error: err.message });
-    console.error('Unexpected error in getPlantUsers:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
 export async function getPlantSchedules(req: Request, res: Response) {
   try {
     const plantId = Number(req.params.id);

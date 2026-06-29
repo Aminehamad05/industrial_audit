@@ -1,0 +1,385 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model audits {
+  id                 Int       @id(map: "PK_audits") @default(autoincrement())
+  auditType          String?   @map("audit_type") @db.NVarChar(100)
+  auditTypeName      String?   @map("audit_type_name") @db.NVarChar(200)
+  auditTarget        String?   @map("audit_target") @db.NVarChar(100)
+  auditorLogin       String?   @map("auditor_login") @db.NVarChar(50)
+  auditorFullName    String?   @map("auditor_full_name") @db.NVarChar(100)
+  startDate          DateTime? @map("start_date") @db.DateTime
+  endDate            DateTime? @map("end_date") @db.DateTime
+  score              Decimal?  @map("score") @db.Decimal(18, 3)
+  comment            String?   @map("comment") @db.NVarChar(200)
+  auditTargetArea    String?   @map("audit_target_area") @db.NVarChar(100)
+  auditTargetSubarea String?   @map("audit_target_subarea") @db.NVarChar(100)
+  auditTargetSection String?   @map("audit_target_section") @db.NVarChar(100)
+  auditShiftName     String?   @map("audit_shift_name") @db.NVarChar(20)
+  supervisorName     String?   @map("supervisor") @db.NVarChar(150)
+  supervisorLogin    String?   @map("supervisorlogin") @db.NVarChar(100)
+  plantId            Int?      @map("idplant")
+  matricule          String?   @map("Matricule") @db.NVarChar(100)
+  TeamLeader         Int?
+  scheduleId         Int?      @map("id_Schedule")
+}
+
+model audit_details {
+  id               Int     @id(map: "PK_audit_details") @default(autoincrement())
+  auditId          Int     @map("audit_id")
+  groupPosition    Int     @map("group_position")
+  groupName        String  @map("group_name") @db.NVarChar(100)
+  groupNameEng     String  @map("group_name_ENG") @db.NVarChar(100)
+  questionPosition Int     @map("question_position")
+  question         String  @map("question") @db.NVarChar(800)
+  questionEng      String  @map("question_ENG") @db.NVarChar(800)
+  answer           String? @map("answer") @db.NVarChar(100)
+  comment          String? @map("comment") @db.NVarChar(200)
+  answerOk         Boolean @map("answer_OK")
+  answerNok        Boolean @map("answer_NOK")
+  answerNc         Boolean @map("answer_NC")
+  answerNa         Boolean @map("answer_NA")
+  plantId          Int?    @map("id_plant")
+  photoPath        String? @map("Photo_Path") @db.NVarChar(100)
+}
+
+model actions {
+  id                  Int       @id(map: "PK_actions") @default(autoincrement())
+  auditId             Int       @map("audit_id")
+  auditDetailId       Int       @map("audit_detail_id")
+  statusId            Int?      @map("id_status")
+  responsibleLogin    String    @map("responsible_login") @db.NVarChar(50)
+  responsibleFullName String    @map("responsible_full_name") @db.NVarChar(100)
+  description         String?   @map("action") @db.NVarChar(200)
+  plannedTerm         DateTime? @map("planned_term") @db.Date
+  term                DateTime? @map("term") @db.Date
+  lastEditDate        DateTime? @map("last_edit_date") @db.DateTime
+  lastEditedByUser    String?   @map("user_action") @db.NVarChar(50)
+  plantId             Int?      @map("idPlant")
+  cause               String?   @map("cause") @db.NVarChar(50)
+}
+
+model schedules {
+  id                 Int       @id(map: "PK_schedules") @default(autoincrement())
+  scheduleName       String    @map("schedule_name") @db.NVarChar(200)
+  auditType          String    @map("audit_type") @db.NVarChar(200)
+  auditTarget        String?   @map("audit_target") @db.NVarChar(200)
+  auditDate          DateTime? @map("audit_date") @db.Date
+  auditYear          Int?      @map("audit_year")
+  auditMonth         Int?      @map("audit_month")
+  auditWeek          Int?      @map("audit_week")
+  auditor_login      String?   @db.NVarChar(200)
+  auditTargetSubarea String?   @map("audit_target_subarea") @db.NVarChar(200)
+  auditTargetArea    String?   @map("audit_target_area") @db.NVarChar(200)
+  plantId            Int?      @map("idPlant")
+  status             Int?      @map("audit_status")
+  section            String?   @map("section") @db.NVarChar(200)
+}
+
+model AffectationUserUserChef {
+  idaffectuser Int     @id(map: "PK_AffectationUserUserChef") @default(autoincrement())
+  UserId       String? @db.NVarChar(50)
+  UserIdSup    String? @db.NVarChar(50)
+  idPlant      Int?
+}
+
+model aspnet_Applications {
+  ApplicationName        String              @unique(map: "UQ__aspnet_A__3091033107020F21") @db.NVarChar(256)
+  LoweredApplicationName String              @unique(map: "UQ__aspnet_A__17477DE40425A276") @db.NVarChar(256)
+  ApplicationId          String              @id(clustered: false, map: "PK__aspnet_A__C93A4C98014935CB") @default(dbgenerated("newid()"), map: "DF__aspnet_Ap__Appli__08EA5793") @db.UniqueIdentifier
+  Description            String?             @db.NVarChar(256)
+  aspnet_Membership      aspnet_Membership[]
+  aspnet_Paths           aspnet_Paths[]
+  aspnet_Roles           aspnet_Roles[]
+  aspnet_Users           aspnet_Users[]
+}
+
+model aspnet_Membership {
+  ApplicationId                          String              @db.UniqueIdentifier
+  UserId                                 String              @id(clustered: false, map: "PK__aspnet_M__1788CC4D1FCDBCEB") @db.UniqueIdentifier
+  Password                               String              @db.NVarChar(128)
+  PasswordFormat                         Int                 @default(0, map: "DF__aspnet_Me__Passw__239E4DCF")
+  PasswordSalt                           String              @db.NVarChar(128)
+  MobilePIN                              String?             @db.NVarChar(16)
+  Email                                  String?             @db.NVarChar(256)
+  LoweredEmail                           String?             @db.NVarChar(256)
+  PasswordQuestion                       String?             @db.NVarChar(256)
+  PasswordAnswer                         String?             @db.NVarChar(128)
+  IsApproved                             Boolean
+  IsLockedOut                            Boolean
+  CreateDate                             DateTime            @db.DateTime
+  LastLoginDate                          DateTime            @db.DateTime
+  LastPasswordChangedDate                DateTime            @db.DateTime
+  LastLockoutDate                        DateTime            @db.DateTime
+  FailedPasswordAttemptCount             Int
+  FailedPasswordAttemptWindowStart       DateTime            @db.DateTime
+  FailedPasswordAnswerAttemptCount       Int
+  FailedPasswordAnswerAttemptWindowStart DateTime            @db.DateTime
+  Comment                                String?             @db.NText
+  idPlant                                Int?
+  aspnet_Applications                    aspnet_Applications @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Me__Appli__21B6055D")
+}
+
+model aspnet_Paths {
+  ApplicationId                  String                          @db.UniqueIdentifier
+  PathId                         String                          @id(clustered: false, map: "PK__aspnet_P__CD67DC5859063A47") @default(dbgenerated("newid()"), map: "DF__aspnet_Pa__PathI__5BE2A6F2") @db.UniqueIdentifier
+  Path                           String                          @db.NVarChar(256)
+  LoweredPath                    String                          @db.NVarChar(256)
+  aspnet_Applications            aspnet_Applications             @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Pa__Appli__5AEE82B9")
+  aspnet_PersonalizationAllUsers aspnet_PersonalizationAllUsers?
+  aspnet_PersonalizationPerUser  aspnet_PersonalizationPerUser[]
+}
+
+model aspnet_PersonalizationAllUsers {
+  PathId          String       @id(map: "PK__aspnet_P__CD67DC5960A75C0F") @db.UniqueIdentifier
+  PageSettings    Bytes        @db.Image
+  LastUpdatedDate DateTime     @db.DateTime
+  aspnet_Paths    aspnet_Paths @relation(fields: [PathId], references: [PathId], onUpdate: NoAction, map: "FK__aspnet_Pe__PathI__0F624AF8")
+}
+
+model aspnet_PersonalizationPerUser {
+  Id              String        @id(clustered: false, map: "PK__aspnet_P__3214EC06656C112C") @default(dbgenerated("newid()"), map: "DF__aspnet_Perso__Id__6754599E") @db.UniqueIdentifier
+  PathId          String?       @db.UniqueIdentifier
+  UserId          String?       @db.UniqueIdentifier
+  PageSettings    Bytes         @db.Image
+  LastUpdatedDate DateTime      @db.DateTime
+  aspnet_Paths    aspnet_Paths? @relation(fields: [PathId], references: [PathId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Pe__PathI__123EB7A3")
+  aspnet_Users    aspnet_Users? @relation(fields: [UserId], references: [UserId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Pe__UserI__693CA210")
+}
+
+model aspnet_Profile {
+  UserId               String       @id(map: "PK__aspnet_P__1788CC4C36B12243") @db.UniqueIdentifier
+  PropertyNames        String       @db.NText
+  PropertyValuesString String       @db.NText
+  PropertyValuesBinary Bytes        @db.Image
+  LastUpdatedDate      DateTime     @db.DateTime
+  aspnet_Users         aspnet_Users @relation(fields: [UserId], references: [UserId], onUpdate: NoAction, map: "FK__aspnet_Pr__UserI__38996AB5")
+}
+
+model aspnet_Roles {
+  ApplicationId       String                @db.UniqueIdentifier
+  RoleId              String                @id(clustered: false, map: "PK__aspnet_R__8AFACE1B4222D4EF") @default(dbgenerated("newid()"), map: "DF__aspnet_Ro__RoleI__44FF419A") @db.UniqueIdentifier
+  RoleName            String                @db.NVarChar(256)
+  LoweredRoleName     String                @db.NVarChar(256)
+  Description         String?               @db.NVarChar(256)
+  idPlant             Int?
+  aspnet_Applications aspnet_Applications   @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Ro__Appli__440B1D61")
+  aspnet_UsersInRoles aspnet_UsersInRoles[]
+}
+
+model aspnet_SchemaVersions {
+  Feature                 String  @db.NVarChar(128)
+  CompatibleSchemaVersion String  @db.NVarChar(128)
+  IsCurrentVersion        Boolean
+
+  @@id([Feature, CompatibleSchemaVersion], map: "PK__aspnet_S__5A1E6BC11367E606")
+}
+
+model aspnet_Users {
+  ApplicationId                 String?                         @db.UniqueIdentifier
+  UserId                        String                          @id(clustered: false, map: "PK__aspnet_U__1788CC4D0BC6C43E") @default(dbgenerated("newid()"), map: "DF__aspnet_Us__UserI__0EA330E9") @db.UniqueIdentifier
+  UserName                      String?                         @db.NVarChar(256)
+  LoweredUserName               String?                         @db.NVarChar(256)
+  MobileAlias                   String?                         @db.NVarChar(16)
+  IsAnonymous                   Boolean?                        @default(false, map: "DF__aspnet_Us__IsAno__108B795B")
+  LastActivityDate              DateTime?                       @db.DateTime
+  Name                          String?                         @db.NVarChar(50)
+  LastName                      String?                         @db.NVarChar(50)
+  Email                         String?                         @db.NVarChar(80)
+  FonctionID                    Int?
+  ServiceID                     Int?
+  statut                        Boolean?
+  passwordHash                  String?                         @db.NVarChar(255)
+  aspnet_PersonalizationPerUser aspnet_PersonalizationPerUser[]
+  aspnet_Profile                aspnet_Profile?
+  aspnet_Applications           aspnet_Applications?            @relation(fields: [ApplicationId], references: [ApplicationId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Us__Appli__0DAF0CB0")
+}
+
+model aspnet_UsersInRoles {
+  UserId       String       @db.UniqueIdentifier
+  RoleId       String       @db.UniqueIdentifier
+  aspnet_Roles aspnet_Roles @relation(fields: [RoleId], references: [RoleId], onUpdate: NoAction, map: "FK__aspnet_Us__RoleI__18EBB532")
+
+  @@id([UserId, RoleId], map: "PK__aspnet_U__AF2760AD47DBAE45")
+}
+
+model aspnet_WebEvent_Events {
+  EventId                String   @id(map: "PK__aspnet_W__7944C810797309D9") @db.Char(32)
+  EventTimeUtc           DateTime @db.DateTime
+  EventTime              DateTime @db.DateTime
+  EventType              String   @db.NVarChar(256)
+  EventSequence          Decimal  @db.Decimal(19, 0)
+  EventOccurrence        Decimal  @db.Decimal(19, 0)
+  EventCode              Int
+  EventDetailCode        Int
+  Message                String?  @db.NVarChar(1024)
+  ApplicationPath        String?  @db.NVarChar(256)
+  ApplicationVirtualPath String?  @db.NVarChar(256)
+  MachineName            String   @db.NVarChar(256)
+  RequestUrl             String?  @db.NVarChar(1024)
+  ExceptionType          String?  @db.NVarChar(256)
+  Details                String?  @db.NText
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model audit_details_old {
+  id                Int     @default(autoincrement())
+  audit_id          Int
+  group_position    Int
+  group_name        String  @db.NVarChar(100)
+  group_name_ENG    String  @db.NVarChar(100)
+  question_position Int
+  question          String  @db.NVarChar(800)
+  question_ENG      String  @db.NVarChar(800)
+  answer            String? @db.NVarChar(100)
+  comment           String? @db.NVarChar(200)
+  answer_OK         Boolean
+  answer_NOK        Boolean
+  answer_NC         Boolean
+  answer_NA         Boolean
+  id_plant          Int?
+  Photo_Path        String? @db.NVarChar(100)
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model Audit_status {
+  id_status  Int    @default(autoincrement())
+  audit_type String @db.NVarChar(100)
+
+  @@ignore
+}
+
+model Correspondance_User_Plant {
+  idCorrespondence Int     @id(map: "PK_Correspondance_User_Plant") @default(autoincrement())
+  UserId           String? @db.UniqueIdentifier
+  idPlant          Int?
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model deleted_idaudit_details {
+  id               Int
+  id_audit_deleted Int
+
+  @@ignore
+}
+
+model plant {
+  idPlant          Int     @id(map: "PK_plant") @default(autoincrement())
+  designationPlant String? @db.NVarChar(50)
+}
+
+model setts_action_status {
+  id_status   Int    @id(map: "PK_setts_action_status")
+  etat_status String @db.NVarChar(100)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model setts_audit_machines {
+  Workshop    String? @db.VarChar(50)
+  Ilot        String? @db.VarChar(50)
+  MachineType String? @db.VarChar(50)
+
+  @@ignore
+}
+
+model setts_audit_question_groups {
+  id             Int    @id(map: "PK_setts_audit_question_groups") @default(autoincrement())
+  audit_type     String @db.NVarChar(200)
+  group_position Int
+  group_name     String @db.NVarChar(200)
+  group_name_ENG String @db.NVarChar(200)
+  idPlant        Int?
+}
+
+model setts_audit_questions {
+  id                Int     @id(map: "PK_setts_audit_questions") @default(autoincrement())
+  group_id          Int
+  question_position Int
+  question          String  @db.NVarChar(1500)
+  question_ENG      String  @db.NVarChar(1500)
+  answer_OK         Boolean
+  answer_NOK        Boolean
+  answer_NA         Boolean
+  answer_NC         Boolean
+  idPlant           Int?
+}
+
+model setts_audit_targets {
+  id                Int     @id(map: "PK_setts_audit_targets") @default(autoincrement())
+  audit_type        String  @db.NVarChar(100)
+  audit_target      String  @db.NVarChar(100)
+  area              String? @db.NVarChar(100)
+  subarea           String? @db.NVarChar(100)
+  section           String? @db.NVarChar(100)
+  supervisor_login  String? @db.NVarChar(100)
+  supervisor_login1 String? @db.NVarChar(100)
+  supervisor_login2 String? @db.NVarChar(100)
+  supervisor        String? @db.NVarChar(100)
+  supervisor1       String? @db.NVarChar(100)
+  supervisor2       String? @db.NVarChar(100)
+  idPlant           Int?
+}
+
+model setts_audit_types {
+  id         Int    @id(map: "PK_setts_audit_types") @default(autoincrement())
+  audit_type String @db.NVarChar(200)
+  name       String @db.NVarChar(200)
+  idPlant    Int?
+}
+
+model setts_auditors {
+  id            Int    @id(map: "PK_auditors") @default(autoincrement())
+  audit_type    String @db.NVarChar(100)
+  auditor_login String @db.NVarChar(100)
+  idPlant       Int?
+}
+
+model setts_fonctions {
+  id                   Int     @id(map: "PK_setts_fonctions") @default(autoincrement())
+  designation_fonction String? @db.NVarChar(50)
+}
+
+model setts_schedules {
+  id                   Int    @id(map: "PK_setts_schedules") @default(autoincrement())
+  schedule_name        String @db.NVarChar(200)
+  schedule_description String @db.NVarChar(200)
+  idPlant              Int?
+}
+
+model setts_services {
+  id                  Int     @id(map: "PK_setts_services") @default(autoincrement())
+  designation_service String? @db.NVarChar(200)
+  idPlant             Int?
+}
+
+model setts_shifts {
+  id         Int    @id(map: "PK_setts_shifts") @default(autoincrement())
+  shift_name String @db.NVarChar(20)
+}
+
+model setts_TeamLeader {
+  id          Int     @id(map: "PK_setts_TeamLeader") @default(autoincrement())
+  Team_Leader String? @db.NVarChar(50)
+  idplant     Int?
+  matricule   String? @db.NVarChar(50)
+}
+
+model TJ_FonctionUser {
+  id         Int     @id(map: "PK_TJ_FonctionUser") @default(autoincrement())
+  UserId     String? @db.UniqueIdentifier
+  FonctionID Int?
+}
+
+model TJ_ServiceUser {
+  idServiceUser Int    @id(map: "PK_TJ_ServiceUser") @default(autoincrement())
+  UserId        String @db.UniqueIdentifier
+  ServiceID     Int?
+}

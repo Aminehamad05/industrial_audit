@@ -20,8 +20,7 @@ authRouter.post("/register", async (req, res) => {
       parsed.data.email,
       parsed.data.password,
       parsed.data.fullName,
-      parsed.data.role,
-      parsed.data.division
+      parsed.data.role
     );
     return res.status(201).json(result);
   } catch (err) {

@@ -5,20 +5,17 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "seed:super-admin": "tsx src/db/super_admin.ts",
-    "seed:super-admin-direct": "tsx src/db/create_super_admin_direct.ts",
-    "seed:audits": "tsx src/db/seed_audit_data.ts",
+    "seed": "tsx src/db/seed_simple.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/db/seed.ts"
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -29,8 +26,9 @@
     "mqtt": "^5.15.1",
     "mssql": "^12.5.5",
     "multer": "^2.2.0",
-    "reflect-metadata": "^0.2.2",
-    "typeorm": "^1.0.0",
+    "prisma": "^6.6.0",
+    "prisma": "^6.19.3",
+    "@prisma/client": "^6.6.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

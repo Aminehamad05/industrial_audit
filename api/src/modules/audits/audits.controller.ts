@@ -71,10 +71,10 @@ export async function createAndAssignAudit(req: Request, res: Response, next: Ne
       auditTargetSection: dto.auditTargetSection,
       auditShiftName: dto.auditShiftName,
       auditorId: auditor.id,
-      auditorLogin: auditor.email, // swap to auditor.login if that's the real field name
-      auditorFullName: auditor.fullName,
+      auditorLogin: auditor.email,
+      auditorFullName: auditor.full_name,
       supervisorId: supervisor?.id,
-      supervisorName: supervisor?.fullName,
+      supervisorName: supervisor?.full_name,
       supervisorLogin: supervisor?.email,
       startDate: dto.startDate,
       plantId: plant.id,
@@ -103,7 +103,7 @@ export async function reassignAuditor(req: Request, res: Response, next: NextFun
     }
 
     const audit = await auditsService.reassignAuditor(
-      auditId, auditor.id, auditor.email, auditor.fullName
+      auditId, auditor.id, auditor.email, auditor.full_name
     );
     res.json({ audit });
   } catch (err) {

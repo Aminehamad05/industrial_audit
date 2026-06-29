@@ -1,45 +1,46 @@
-// src/modules/audits/audits.service.ts
-import { AppDataSource } from '../../db/data-source';
-import { Audit } from "./entitites/Audit"
-import { AuditDetail } from "./entitites/AuditDetail"
+import { prisma } from '../../db/prisma';
 import { NotFoundError } from '../../shared/errors/domain-error';
 import { CreateAuditDto } from './dto/create-audit.dto';
-import { string } from 'zod';
 
 interface ListAuditsFilters {
-  auditorId?: string  ;
+  auditorId?: string;
   plantId?: number;
   status?: 'upcoming' | 'in_progress' | 'completed';
 }
 
-export async function listAudits(filters: ListAuditsFilters): Promise<Audit[]> {
-  const repo = AppDataSource.getRepository(Audit);
-  const qb = repo.createQueryBuilder('audit');
+export async function listAudits(filters: ListAuditsFilters) {
+  const where: Record<string, unknown> = {};
 
   if (filters.auditorId) {
-    qb.andWhere('audit.auditorId = :auditorId', { auditorId: filters.auditorId });
+    where.auditorId = filters.auditorId;
   }
   if (filters.plantId) {
-    qb.andWhere('audit.plantId = :plantId', { plantId: filters.plantId });
-  }
-  if (filters.status === 'upcoming') {
-    qb.andWhere('audit.startDate > :now AND audit.endDate IS NULL', { now: new Date() });
-  } else if (filters.status === 'in_progress') {
-    qb.andWhere('audit.startDate <= :now AND audit.endDate IS NULL', { now: new Date() });
-  } else if (filters.status === 'completed') {
-    qb.andWhere('audit.endDate IS NOT NULL');
+    where.plantId = filters.plantId;
   }
 
-  qb.orderBy('audit.startDate', 'DESC');
-  return qb.getMany();
+  const now = new Date();
+  if (filters.status === 'upcoming') {
+    where.startDate = { gt: now } as any;
+    where.endDate = null;
+  } else if (filters.status === 'in_progress') {
+    where.startDate = { lte: now } as any;
+    where.endDate = null;
+  } else if (filters.status === 'completed') {
+    where.endDate = { not: null } as any;
+  }
+
+  return prisma.audits.findMany({
+    where: where as any,
+    orderBy: { startDate: 'desc' },
+  });
 }
 
-export async function getAuditById(auditId: number): Promise<Audit> {
-  const audit = await AppDataSource.getRepository(Audit).findOne({
-  where: { id: auditId },
-  relations: {
-    details: true,
-    actions: true,
+export async function getAuditById(auditId: number) {
+  const audit = await prisma.audits.findUnique({
+    where: { id: auditId },
+    include: {
+      audit_details: true,
+      actions: true,
     },
   });
   if (!audit) {
@@ -48,73 +49,71 @@ export async function getAuditById(auditId: number): Promise<Audit> {
   return audit;
 }
 
-// Takes fully-resolved data only. This function does NOT check that
-// auditorId/plantId exist — that validation happens in the controller,
-// which is the one layer allowed to know about the users/plants modules.
-export async function createAudit(dto: CreateAuditDto): Promise<Audit> {
-  const repo = AppDataSource.getRepository(Audit);
-
-  const audit = repo.create({
-    auditType: dto.auditType,
-    auditTypeName: dto.auditTypeName,
-    auditTarget: dto.auditTarget,
-    auditTargetArea: dto.auditTargetArea ?? null,
-    auditTargetSubarea: dto.auditTargetSubarea ?? null,
-    auditTargetSection: dto.auditTargetSection ?? null,
-    auditShiftName: dto.auditShiftName ?? null,
-    auditorId: dto.auditorId,
-    auditorLogin: dto.auditorLogin,
-    auditorFullName: dto.auditorFullName,
-    supervisorId: dto.supervisorId,
-    supervisorName: dto.supervisorName ?? null,
-    supervisorLogin: dto.supervisorLogin ?? null,
-    startDate: new Date(dto.startDate),
-    endDate: null,
-    score: null,
-    comment: null,
-    plantId: dto.plantId,
-    matricule: dto.matricule ?? null,
-    scheduleId: dto.scheduleId ?? null,
+export async function createAudit(dto: CreateAuditDto) {
+  return prisma.audits.create({
+    data: {
+      auditType: dto.auditType,
+      auditTypeName: dto.auditTypeName,
+      auditTarget: dto.auditTarget,
+      auditTargetArea: dto.auditTargetArea ?? null,
+      auditTargetSubarea: dto.auditTargetSubarea ?? null,
+      auditTargetSection: dto.auditTargetSection ?? null,
+      auditShiftName: dto.auditShiftName ?? null,
+      auditorId: dto.auditorId,
+      auditorLogin: dto.auditorLogin,
+      auditorFullName: dto.auditorFullName,
+      supervisorId: dto.supervisorId ?? null,
+      supervisorName: dto.supervisorName ?? null,
+      supervisorLogin: dto.supervisorLogin ?? null,
+      startDate: new Date(dto.startDate),
+      endDate: null,
+      score: null,
+      comment: null,
+      plantId: dto.plantId,
+      matricule: dto.matricule ?? null,
+      scheduleId: dto.scheduleId ?? null,
+    },
   });
-
-  return repo.save(audit);
 }
 
-// Same contract — caller already validated newAuditorId exists and has the
-// right role before reaching here.
 export async function reassignAuditor(
   auditId: number,
   newAuditorId: string,
   newAuditorLogin: string,
   newAuditorFullName: string
-): Promise<Audit> {
-  const repo = AppDataSource.getRepository(Audit);
-  const audit = await repo.findOne({ where: { id: auditId } });
+) {
+  const audit = await prisma.audits.findUnique({ where: { id: auditId } });
   if (!audit) {
     throw new NotFoundError(`Audit ${auditId} not found`);
   }
 
-  audit.auditorId = newAuditorId;
-  audit.auditorLogin = newAuditorLogin;
-  audit.auditorFullName = newAuditorFullName;
-  return repo.save(audit);
+  return prisma.audits.update({
+    where: { id: auditId },
+    data: {
+      auditorId: newAuditorId,
+      auditorLogin: newAuditorLogin,
+      auditorFullName: newAuditorFullName,
+    },
+  });
 }
 
 export async function updateAuditResult(
   auditId: number,
   dto: { endDate?: string; score?: number; comment?: string }
-): Promise<Audit> {
-  const repo = AppDataSource.getRepository(Audit);
-  const audit = await repo.findOne({ where: { id: auditId } });
+) {
+  const audit = await prisma.audits.findUnique({ where: { id: auditId } });
   if (!audit) {
     throw new NotFoundError(`Audit ${auditId} not found`);
   }
 
-  if (dto.endDate !== undefined) audit.endDate = new Date(dto.endDate);
-  if (dto.score !== undefined) audit.score = dto.score;
-  if (dto.comment !== undefined) audit.comment = dto.comment;
-
-  return repo.save(audit);
+  return prisma.audits.update({
+    where: { id: auditId },
+    data: {
+      ...(dto.endDate !== undefined && { endDate: new Date(dto.endDate) }),
+      ...(dto.score !== undefined && { score: dto.score }),
+      ...(dto.comment !== undefined && { comment: dto.comment }),
+    },
+  });
 }
 
 export async function createBulkDetails(
@@ -127,15 +126,14 @@ export async function createBulkDetails(
     question: string;
     questionEng: string;
   }>
-): Promise<AuditDetail[]> {
-  const repo = AppDataSource.getRepository(AuditDetail);
-  const audit = await AppDataSource.getRepository(Audit).findOne({ where: { id: auditId } });
+) {
+  const audit = await prisma.audits.findUnique({ where: { id: auditId } });
   if (!audit) {
     throw new NotFoundError(`Audit ${auditId} not found`);
   }
 
-  const details = items.map((item) =>
-    repo.create({
+  await prisma.audit_details.createMany({
+    data: items.map((item) => ({
       auditId,
       groupPosition: item.groupPosition,
       groupName: item.groupName,
@@ -144,16 +142,29 @@ export async function createBulkDetails(
       question: item.question,
       questionEng: item.questionEng,
       plantId: audit.plantId,
-    })
-  );
+    })),
+  });
 
-  return repo.save(details);
+  return prisma.audit_details.findMany({ where: { auditId } });
 }
 
-// Pure, no DB access. Single source of truth for "what counts as in
-// progress" since there's no status column in the real schema.
-export function deriveAuditStatus(audit: Audit): 'Upcoming' | 'InProgress' | 'Completed' {
+export function deriveAuditStatus(audit: {
+  startDate: Date | string;
+  endDate?: Date | string | null;
+  detailsCount?: number;
+}) {
+  const now = new Date();
+  const start = new Date(audit.startDate);
+
   if (audit.endDate) return 'Completed';
-  if (audit.startDate <= new Date()) return 'InProgress';
+
+  if ((audit.detailsCount ?? 0) === 0 && start < now) {
+    return 'Missed';
+  }
+
+  if ((audit.detailsCount ?? 0) > 0) {
+    return 'InProgress';
+  }
+
   return 'Upcoming';
 }
