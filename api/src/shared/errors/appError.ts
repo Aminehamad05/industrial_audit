@@ -15,7 +15,11 @@ export class InvalidCredentialsError extends AppError {
     super(401, "Invalid username or password");
   }
 }
-
+export class EmailTakenError extends AppError {
+  constructor() {
+    super(409, "Email is already taken");
+  }
+}
 export class UsernameTakenError extends AppError {
   constructor() {
     super(409, "Username is already taken");

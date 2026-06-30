@@ -9,9 +9,9 @@ export const ACCOUNT_STATUSES = [
 
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export const ROLES = [
-  "Auditor",
-  "Supervisor",
-  "Administrator",
+  "ADMINISTRATOR",
+  "AUDITOR",
+  "SUPERVISOR",
 ] as const;
 
 export type Role = (typeof ROLES)[number];

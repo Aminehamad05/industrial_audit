@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
-import { InvalidCredentialsError,AccountBlockedError,AccountPendingError,AccountRejectedError, UsernameTakenError,InvalidRoleError } from "../../shared/errors/appError";
+import { InvalidCredentialsError,AccountBlockedError,AccountPendingError,AccountRejectedError, UsernameTakenError,InvalidRoleError,EmailTakenError } from "../../shared/errors/appError";
 import { ROLES, type JwtPayload, type Role } from "../../shared/types/auth";
 
 const BCRYPT_ROUNDS = 12;
@@ -26,12 +26,22 @@ export async function register(
   role: Role
 ) {
   const existing = await prisma.aspnet_Users.findFirst({
-  where: { Email: { equals: email.trim().toLowerCase() } },
+  where: {
+    OR: [
+      { Email: { equals: email.trim().toLowerCase() } },
+      { UserName: { equals: username.trim().toLowerCase() } },
+    ],
+  },
 });
 
   if (existing) {
-    throw new UsernameTakenError();
-  }
+  const emailTaken = existing.Email?.toLowerCase() === email.trim().toLowerCase();
+  const usernameTaken = existing.UserName?.toLowerCase() === username.trim().toLowerCase();
+  // throw appropriate error based on which matched
+  if(emailTaken){
+    throw new EmailTakenError()
+  }throw new UsernameTakenError()
+}
 
   // Application + Role must exist before we can attach a user to them.
   const application = await prisma.aspnet_Applications.findFirstOrThrow();
@@ -149,18 +159,17 @@ export async function login(email: string, password: string) {
       data: { LastLoginDate: new Date() },
     });
   }
-  const allowedRoles = ["Administrator", "Auditor", "Supervisor"] as const;
+  const allowedRoles = ["ADMINISTRATOR", "AUDITOR", "SUPERVISOR"] as const;
   type Role = typeof allowedRoles[number];
   function isRole(role: string): role is Role {
     return allowedRoles.includes(role as Role);
   }
   const roleName = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
-  if (!roleName || !isRole(roleName)) {
+   if (!roleName || !isRole(roleName)) {
     throw new InvalidRoleError();
   }
 
   const token = issueToken({ userId: user.UserId, role:roleName });
-
   return {
     token,
     user: {
