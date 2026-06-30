@@ -3,8 +3,8 @@ import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
-import { InvalidCredentialsError, UsernameTakenError } from "../../shared/errors/appError";
-import type { JwtPayload, Role } from "../../shared/types/auth";
+import { InvalidCredentialsError,AccountBlockedError,AccountPendingError,AccountRejectedError, UsernameTakenError,InvalidRoleError } from "../../shared/errors/appError";
+import { ROLES, type JwtPayload, type Role } from "../../shared/types/auth";
 
 const BCRYPT_ROUNDS = 12;
 
@@ -26,42 +26,94 @@ export async function register(
   role: Role
 ) {
   const existing = await prisma.aspnet_Users.findFirst({
-    where: {
-      OR: [
-        { LoweredUserName: username.toLowerCase() },
-        { Email: email }
-      ]
-    },
-  });
+  where: { Email: { equals: email.trim().toLowerCase() } },
+});
 
   if (existing) {
     throw new UsernameTakenError();
   }
 
+  // Application + Role must exist before we can attach a user to them.
+  const application = await prisma.aspnet_Applications.findFirstOrThrow();
+
+  const roleRecord = await prisma.aspnet_Roles.findFirst({
+    where: {
+      RoleName: role,
+      ApplicationId: application.ApplicationId,
+    },
+  });
+
+  if (!roleRecord) {
+    throw new InvalidRoleError();
+  }
+
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  const user = await prisma.aspnet_Users.create({
-    data: {
-      UserName: username,
-      LoweredUserName: username.toLowerCase(),
-      Email: email,
-      Name: fullName,
-      passwordHash,
-      IsAnonymous: false,
-      LastActivityDate: new Date(),
-    },
+  // Wrap all related inserts in a transaction so a partial user never gets created.
+  const user = await prisma.$transaction(async (tx) => {
+    const newUser = await tx.aspnet_Users.create({
+      data: {
+        ApplicationId: application.ApplicationId,
+        UserName: username,
+        LoweredUserName: username.toLowerCase(),
+        Email: email,
+        Name: fullName,
+        passwordHash,
+        status: "Pending",
+        IsAnonymous: false,
+        LastActivityDate: new Date(),
+      },
+    });
+
+    await tx.aspnet_Membership.create({
+      data: {
+        ApplicationId: application.ApplicationId,
+        UserId: newUser.UserId,
+        Password: passwordHash,
+        PasswordFormat: 1,
+        PasswordSalt: "n/a", // bcrypt embeds its own salt; this column is a legacy ASP.NET artifact
+        Email: email,
+        LoweredEmail: email.toLowerCase(),
+        IsApproved: false,
+        IsLockedOut: false,
+        CreateDate: new Date(),
+        LastLoginDate: new Date(),
+        LastPasswordChangedDate: new Date(),
+        LastLockoutDate: new Date(),
+        FailedPasswordAttemptCount: 0,
+        FailedPasswordAttemptWindowStart: new Date(),
+        FailedPasswordAnswerAttemptCount: 0,
+        FailedPasswordAnswerAttemptWindowStart: new Date(),
+      },
+    });
+
+    await tx.aspnet_UsersInRoles.create({
+      data: {
+        UserId: newUser.UserId,
+        RoleId: roleRecord.RoleId,
+      },
+    });
+
+    return newUser;
   });
 
   return {
     id: user.UserId,
     fullName: user.Name || "",
     role: role,
+    status: user.status,
   };
 }
 
 export async function login(email: string, password: string) {
   const user = await prisma.aspnet_Users.findFirst({
     where: { Email: email },
+    include: {
+      aspnet_Membership: true,
+      aspnet_UsersInRoles: {
+        include: { aspnet_Roles: true },
+      },
+    },
   });
 
   if (!user || !user.passwordHash) {
@@ -73,15 +125,48 @@ export async function login(email: string, password: string) {
   if (!passwordValid) {
     throw new InvalidCredentialsError();
   }
+  if (user.status === "Blocked") {
+    throw new AccountBlockedError();
+  }
 
-  const token = issueToken({ userId: user.UserId, role: "Auditor" as Role });
+  if (user.status === "Deleted") {
+    throw new InvalidCredentialsError(); // don't reveal the account ever existed
+  }
+  if (user.status === "Pending") {
+    throw new AccountPendingError();
+  }
+  const role = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
+  if (!role) {
+    throw new InvalidRoleError();
+  }
+  await prisma.aspnet_Users.update({
+    where: { UserId: user.UserId },
+    data: { LastActivityDate: new Date() },
+  });
+  if (user.aspnet_Membership) {
+    await prisma.aspnet_Membership.update({
+      where: { UserId: user.UserId },
+      data: { LastLoginDate: new Date() },
+    });
+  }
+  const allowedRoles = ["Administrator", "Auditor", "Supervisor"] as const;
+  type Role = typeof allowedRoles[number];
+  function isRole(role: string): role is Role {
+    return allowedRoles.includes(role as Role);
+  }
+  const roleName = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
+  if (!roleName || !isRole(roleName)) {
+    throw new InvalidRoleError();
+  }
+
+  const token = issueToken({ userId: user.UserId, role:roleName });
 
   return {
     token,
     user: {
       id: user.UserId,
       fullName: user.Name || user.UserName || "",
-      role: "Auditor" as Role,
+      role: role  as Role,
     },
   };
 }

@@ -50,18 +50,7 @@ authRouter.post("/login", async (req, res) => {
 });
 
 
-authRouter.post("/logMe", async (req, res) => {
-  try{
-    const data = req.body;
-    if (data.username==='admin' && data.password === 'Welcome') {
-      res.status(201).json({success:true, data:{user:'Super star', name:'Salah Tounsi'}})
-    } else res.status(401).json({success:false, msg:'not a user , barra rawe7'})
-  }catch (err){
-    console.log("Error API Logme", err)
-    res.status(500).json({success:false, msg:err})
-  }
-  
-});
+ 
 
 authRouter.get("/me", requireAuth, (req, res) => {
   res.status(200).json({ user: req.user });

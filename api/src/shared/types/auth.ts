@@ -11,7 +11,6 @@ export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 export const ROLES = [
   "Auditor",
   "Supervisor",
-  "MaintenanceTechnician",
   "Administrator",
 ] as const;
 

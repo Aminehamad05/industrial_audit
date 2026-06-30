@@ -5,6 +5,11 @@ export class AppError extends Error {
   }
 }
 
+export class InvalidRoleError extends AppError {
+  constructor() {
+    super(401, "Invalid Role");
+  }
+}
 export class InvalidCredentialsError extends AppError {
   constructor() {
     super(401, "Invalid username or password");
