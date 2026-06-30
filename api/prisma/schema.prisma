@@ -12,7 +12,7 @@ model audits {
   auditType          String?   @map("audit_type") @db.NVarChar(100)
   auditTypeName      String?   @map("audit_type_name") @db.NVarChar(200)
   auditTarget        String?   @map("audit_target") @db.NVarChar(100)
-  auditorLogin       String?   @map("auditor_login") @db.NVarChar(50)
+  auditorLogin       String?   @map("auditor_login") @db.NVarChar(256)
   auditorFullName    String?   @map("auditor_full_name") @db.NVarChar(100)
   startDate          DateTime? @map("start_date") @db.DateTime
   endDate            DateTime? @map("end_date") @db.DateTime
@@ -23,11 +23,20 @@ model audits {
   auditTargetSection String?   @map("audit_target_section") @db.NVarChar(100)
   auditShiftName     String?   @map("audit_shift_name") @db.NVarChar(20)
   supervisorName     String?   @map("supervisor") @db.NVarChar(150)
-  supervisorLogin    String?   @map("supervisorlogin") @db.NVarChar(100)
+  supervisorLogin    String?   @map("supervisorlogin") @db.NVarChar(256)
   plantId            Int?      @map("idplant")
   matricule          String?   @map("Matricule") @db.NVarChar(100)
   TeamLeader         Int?
   scheduleId         Int?      @map("id_Schedule")
+
+  plant          plant?            @relation(fields: [plantId], references: [idPlant], map: "FK_audits_plant", onDelete: NoAction, onUpdate: NoAction)
+  schedule       schedules?        @relation(fields: [scheduleId], references: [id], map: "FK_audits_schedule", onDelete: NoAction, onUpdate: NoAction)
+  teamLeader     setts_TeamLeader? @relation(fields: [TeamLeader], references: [id], map: "FK_audits_teamleader", onDelete: NoAction, onUpdate: NoAction)
+  auditor        aspnet_Users?     @relation("AuditAuditor", fields: [auditorLogin], references: [UserName], map: "FK_audits_auditor", onDelete: NoAction, onUpdate: NoAction)
+  supervisor     aspnet_Users?     @relation("AuditSupervisor", fields: [supervisorLogin], references: [UserName], map: "FK_audits_supervisor", onDelete: NoAction, onUpdate: NoAction)
+
+  audit_details audit_details[]
+  actions       actions[]
 }
 
 model audit_details {
@@ -47,6 +56,10 @@ model audit_details {
   answerNa         Boolean @map("answer_NA")
   plantId          Int?    @map("id_plant")
   photoPath        String? @map("Photo_Path") @db.NVarChar(100)
+
+  audit   audits  @relation(fields: [auditId], references: [id], map: "FK_audit_details_audit", onDelete: NoAction, onUpdate: NoAction)
+  plant   plant?  @relation(fields: [plantId], references: [idPlant], map: "FK_audit_details_plant", onDelete: NoAction, onUpdate: NoAction)
+  actions actions[]
 }
 
 model actions {
@@ -54,7 +67,7 @@ model actions {
   auditId             Int       @map("audit_id")
   auditDetailId       Int       @map("audit_detail_id")
   statusId            Int?      @map("id_status")
-  responsibleLogin    String    @map("responsible_login") @db.NVarChar(50)
+  responsibleLogin    String    @map("responsible_login") @db.NVarChar(256)
   responsibleFullName String    @map("responsible_full_name") @db.NVarChar(100)
   description         String?   @map("action") @db.NVarChar(200)
   plannedTerm         DateTime? @map("planned_term") @db.Date
@@ -63,6 +76,12 @@ model actions {
   lastEditedByUser    String?   @map("user_action") @db.NVarChar(50)
   plantId             Int?      @map("idPlant")
   cause               String?   @map("cause") @db.NVarChar(50)
+
+  audit       audits               @relation(fields: [auditId], references: [id], map: "FK_actions_audit", onDelete: NoAction, onUpdate: NoAction)
+  auditDetail audit_details        @relation(fields: [auditDetailId], references: [id], map: "FK_actions_auditdetail", onDelete: NoAction, onUpdate: NoAction)
+  status      setts_action_status? @relation(fields: [statusId], references: [id_status], map: "FK_actions_status", onDelete: NoAction, onUpdate: NoAction)
+  plant       plant?               @relation(fields: [plantId], references: [idPlant], map: "FK_actions_plant", onDelete: NoAction, onUpdate: NoAction)
+  responsible aspnet_Users?        @relation("ActionResponsible", fields: [responsibleLogin], references: [UserName], map: "FK_actions_responsible", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model schedules {
@@ -80,13 +99,20 @@ model schedules {
   plantId            Int?      @map("idPlant")
   status             Int?      @map("audit_status")
   section            String?   @map("section") @db.NVarChar(200)
+
+  plant  plant?   @relation(fields: [plantId], references: [idPlant], map: "FK_schedules_plant", onDelete: NoAction, onUpdate: NoAction)
+  audits audits[]
 }
 
 model AffectationUserUserChef {
   idaffectuser Int     @id(map: "PK_AffectationUserUserChef") @default(autoincrement())
-  UserId       String? @db.NVarChar(50)
-  UserIdSup    String? @db.NVarChar(50)
+  UserId       String? @db.UniqueIdentifier
+  UserIdSup    String? @db.UniqueIdentifier
   idPlant      Int?
+
+  user  aspnet_Users? @relation("AffectationUser", fields: [UserId], references: [UserId], map: "FK_Affectation_user", onDelete: NoAction, onUpdate: NoAction)
+  chef  aspnet_Users? @relation("AffectationChef", fields: [UserIdSup], references: [UserId], map: "FK_Affectation_chef", onDelete: NoAction, onUpdate: NoAction)
+  plant plant?        @relation(fields: [idPlant], references: [idPlant], map: "FK_AffectationUserUserChef_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model aspnet_Applications {
@@ -123,7 +149,9 @@ model aspnet_Membership {
   FailedPasswordAnswerAttemptWindowStart DateTime            @db.DateTime
   Comment                                String?             @db.NText
   idPlant                                Int?
-  aspnet_Applications                    aspnet_Applications @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Me__Appli__21B6055D")
+  aspnet_Applications                    aspnet_Applications @relation(fields: [ApplicationId], references: [ApplicationId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Me__Appli__21B6055D")
+  aspnet_Users                           aspnet_Users        @relation(fields: [UserId], references: [UserId], map: "FK_aspnet_Membership_Users", onDelete: NoAction, onUpdate: NoAction)
+  plant                                  plant?              @relation(fields: [idPlant], references: [idPlant], map: "FK_aspnet_Membership_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model aspnet_Paths {
@@ -131,7 +159,7 @@ model aspnet_Paths {
   PathId                         String                          @id(clustered: false, map: "PK__aspnet_P__CD67DC5859063A47") @default(dbgenerated("newid()"), map: "DF__aspnet_Pa__PathI__5BE2A6F2") @db.UniqueIdentifier
   Path                           String                          @db.NVarChar(256)
   LoweredPath                    String                          @db.NVarChar(256)
-  aspnet_Applications            aspnet_Applications             @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Pa__Appli__5AEE82B9")
+  aspnet_Applications            aspnet_Applications             @relation(fields: [ApplicationId], references: [ApplicationId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Pa__Appli__5AEE82B9")
   aspnet_PersonalizationAllUsers aspnet_PersonalizationAllUsers?
   aspnet_PersonalizationPerUser  aspnet_PersonalizationPerUser[]
 }
@@ -140,7 +168,7 @@ model aspnet_PersonalizationAllUsers {
   PathId          String       @id(map: "PK__aspnet_P__CD67DC5960A75C0F") @db.UniqueIdentifier
   PageSettings    Bytes        @db.Image
   LastUpdatedDate DateTime     @db.DateTime
-  aspnet_Paths    aspnet_Paths @relation(fields: [PathId], references: [PathId], onUpdate: NoAction, map: "FK__aspnet_Pe__PathI__0F624AF8")
+  aspnet_Paths    aspnet_Paths @relation(fields: [PathId], references: [PathId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Pe__PathI__0F624AF8")
 }
 
 model aspnet_PersonalizationPerUser {
@@ -159,7 +187,7 @@ model aspnet_Profile {
   PropertyValuesString String       @db.NText
   PropertyValuesBinary Bytes        @db.Image
   LastUpdatedDate      DateTime     @db.DateTime
-  aspnet_Users         aspnet_Users @relation(fields: [UserId], references: [UserId], onUpdate: NoAction, map: "FK__aspnet_Pr__UserI__38996AB5")
+  aspnet_Users         aspnet_Users @relation(fields: [UserId], references: [UserId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Pr__UserI__38996AB5")
 }
 
 model aspnet_Roles {
@@ -169,8 +197,9 @@ model aspnet_Roles {
   LoweredRoleName     String                @db.NVarChar(256)
   Description         String?               @db.NVarChar(256)
   idPlant             Int?
-  aspnet_Applications aspnet_Applications   @relation(fields: [ApplicationId], references: [ApplicationId], onUpdate: NoAction, map: "FK__aspnet_Ro__Appli__440B1D61")
+  aspnet_Applications aspnet_Applications   @relation(fields: [ApplicationId], references: [ApplicationId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Ro__Appli__440B1D61")
   aspnet_UsersInRoles aspnet_UsersInRoles[]
+  plant               plant?                @relation(fields: [idPlant], references: [idPlant], map: "FK_aspnet_Roles_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model aspnet_SchemaVersions {
@@ -181,10 +210,12 @@ model aspnet_SchemaVersions {
   @@id([Feature, CompatibleSchemaVersion], map: "PK__aspnet_S__5A1E6BC11367E606")
 }
 
+
+ 
 model aspnet_Users {
   ApplicationId                 String?                         @db.UniqueIdentifier
   UserId                        String                          @id(clustered: false, map: "PK__aspnet_U__1788CC4D0BC6C43E") @default(dbgenerated("newid()"), map: "DF__aspnet_Us__UserI__0EA330E9") @db.UniqueIdentifier
-  UserName                      String?                         @db.NVarChar(256)
+  UserName                      String?                         @unique(map: "UQ_aspnet_Users_UserName") @db.NVarChar(256)
   LoweredUserName               String?                         @db.NVarChar(256)
   MobileAlias                   String?                         @db.NVarChar(16)
   IsAnonymous                   Boolean?                        @default(false, map: "DF__aspnet_Us__IsAno__108B795B")
@@ -195,16 +226,31 @@ model aspnet_Users {
   FonctionID                    Int?
   ServiceID                     Int?
   statut                        Boolean?
+  status                        String                          @default("Pending") @map("status") @db.VarChar(20)
   passwordHash                  String?                         @db.NVarChar(255)
+
   aspnet_PersonalizationPerUser aspnet_PersonalizationPerUser[]
   aspnet_Profile                aspnet_Profile?
+  aspnet_Membership              aspnet_Membership?
   aspnet_Applications           aspnet_Applications?            @relation(fields: [ApplicationId], references: [ApplicationId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Us__Appli__0DAF0CB0")
+  fonction                       setts_fonctions?                @relation(fields: [FonctionID], references: [id], map: "FK_aspnet_Users_fonction", onDelete: NoAction, onUpdate: NoAction)
+  service                        setts_services?                 @relation(fields: [ServiceID], references: [id], map: "FK_aspnet_Users_service", onDelete: NoAction, onUpdate: NoAction)
+  aspnet_UsersInRoles            aspnet_UsersInRoles[]
+  correspondancePlants           Correspondance_User_Plant[]
+  fonctionAssignments            TJ_FonctionUser[]
+  serviceAssignments             TJ_ServiceUser[]
+  auditsAsAuditor                audits[]                        @relation("AuditAuditor")
+  auditsAsSupervisor              audits[]                        @relation("AuditSupervisor")
+  actionsAsResponsible             actions[]                       @relation("ActionResponsible")
+  affectationsAsUser               AffectationUserUserChef[]       @relation("AffectationUser")
+  affectationsAsChef               AffectationUserUserChef[]       @relation("AffectationChef")
 }
 
 model aspnet_UsersInRoles {
   UserId       String       @db.UniqueIdentifier
   RoleId       String       @db.UniqueIdentifier
-  aspnet_Roles aspnet_Roles @relation(fields: [RoleId], references: [RoleId], onUpdate: NoAction, map: "FK__aspnet_Us__RoleI__18EBB532")
+  aspnet_Roles aspnet_Roles @relation(fields: [RoleId], references: [RoleId], onDelete: NoAction, onUpdate: NoAction, map: "FK__aspnet_Us__RoleI__18EBB532")
+  aspnet_Users aspnet_Users @relation(fields: [UserId], references: [UserId], map: "FK_aspnet_UsersInRoles_Users", onDelete: NoAction, onUpdate: NoAction)
 
   @@id([UserId, RoleId], map: "PK__aspnet_U__AF2760AD47DBAE45")
 }
@@ -261,6 +307,9 @@ model Correspondance_User_Plant {
   idCorrespondence Int     @id(map: "PK_Correspondance_User_Plant") @default(autoincrement())
   UserId           String? @db.UniqueIdentifier
   idPlant          Int?
+
+  user  aspnet_Users? @relation(fields: [UserId], references: [UserId], map: "FK_CorrUserPlant_user", onDelete: NoAction, onUpdate: NoAction)
+  plant plant?        @relation(fields: [idPlant], references: [idPlant], map: "FK_CorrUserPlant_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -274,11 +323,30 @@ model deleted_idaudit_details {
 model plant {
   idPlant          Int     @id(map: "PK_plant") @default(autoincrement())
   designationPlant String? @db.NVarChar(50)
+
+  audits                      audits[]
+  audit_details                audit_details[]
+  actions                      actions[]
+  schedules                    schedules[]
+  affectations                 AffectationUserUserChef[]
+  aspnet_Membership             aspnet_Membership[]
+  aspnet_Roles                  aspnet_Roles[]
+  correspondances               Correspondance_User_Plant[]
+  setts_audit_question_groups    setts_audit_question_groups[]
+  setts_audit_questions          setts_audit_questions[]
+  setts_audit_targets            setts_audit_targets[]
+  setts_audit_types              setts_audit_types[]
+  setts_auditors                 setts_auditors[]
+  setts_schedules                 setts_schedules[]
+  setts_services                  setts_services[]
+  setts_TeamLeader                setts_TeamLeader[]
 }
 
 model setts_action_status {
   id_status   Int    @id(map: "PK_setts_action_status")
   etat_status String @db.NVarChar(100)
+
+  actions actions[]
 }
 
 /// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
@@ -297,6 +365,9 @@ model setts_audit_question_groups {
   group_name     String @db.NVarChar(200)
   group_name_ENG String @db.NVarChar(200)
   idPlant        Int?
+
+  plant     plant?                   @relation(fields: [idPlant], references: [idPlant], map: "FK_question_groups_plant", onDelete: NoAction, onUpdate: NoAction)
+  questions setts_audit_questions[]
 }
 
 model setts_audit_questions {
@@ -310,6 +381,9 @@ model setts_audit_questions {
   answer_NA         Boolean
   answer_NC         Boolean
   idPlant           Int?
+
+  group setts_audit_question_groups @relation(fields: [group_id], references: [id], map: "FK_questions_group", onDelete: NoAction, onUpdate: NoAction)
+  plant plant?                      @relation(fields: [idPlant], references: [idPlant], map: "FK_questions_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model setts_audit_targets {
@@ -326,6 +400,8 @@ model setts_audit_targets {
   supervisor1       String? @db.NVarChar(100)
   supervisor2       String? @db.NVarChar(100)
   idPlant           Int?
+
+  plant plant? @relation(fields: [idPlant], references: [idPlant], map: "FK_audit_targets_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model setts_audit_types {
@@ -333,6 +409,8 @@ model setts_audit_types {
   audit_type String @db.NVarChar(200)
   name       String @db.NVarChar(200)
   idPlant    Int?
+
+  plant plant? @relation(fields: [idPlant], references: [idPlant], map: "FK_audit_types_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model setts_auditors {
@@ -340,11 +418,16 @@ model setts_auditors {
   audit_type    String @db.NVarChar(100)
   auditor_login String @db.NVarChar(100)
   idPlant       Int?
+
+  plant plant? @relation(fields: [idPlant], references: [idPlant], map: "FK_auditors_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model setts_fonctions {
   id                   Int     @id(map: "PK_setts_fonctions") @default(autoincrement())
   designation_fonction String? @db.NVarChar(50)
+
+  users             aspnet_Users[]
+  fonctionAssignments TJ_FonctionUser[]
 }
 
 model setts_schedules {
@@ -352,12 +435,18 @@ model setts_schedules {
   schedule_name        String @db.NVarChar(200)
   schedule_description String @db.NVarChar(200)
   idPlant              Int?
+
+  plant plant? @relation(fields: [idPlant], references: [idPlant], map: "FK_setts_schedules_plant", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model setts_services {
   id                  Int     @id(map: "PK_setts_services") @default(autoincrement())
   designation_service String? @db.NVarChar(200)
   idPlant             Int?
+
+  plant              plant?            @relation(fields: [idPlant], references: [idPlant], map: "FK_setts_services_plant", onDelete: NoAction, onUpdate: NoAction)
+  users               aspnet_Users[]
+  serviceAssignments  TJ_ServiceUser[]
 }
 
 model setts_shifts {
@@ -370,16 +459,25 @@ model setts_TeamLeader {
   Team_Leader String? @db.NVarChar(50)
   idplant     Int?
   matricule   String? @db.NVarChar(50)
+
+  plant  plant?   @relation(fields: [idplant], references: [idPlant], map: "FK_TeamLeader_plant", onDelete: NoAction, onUpdate: NoAction)
+  audits audits[]
 }
 
 model TJ_FonctionUser {
   id         Int     @id(map: "PK_TJ_FonctionUser") @default(autoincrement())
   UserId     String? @db.UniqueIdentifier
   FonctionID Int?
+
+  user     aspnet_Users?    @relation(fields: [UserId], references: [UserId], map: "FK_TJFonctionUser_user", onDelete: NoAction, onUpdate: NoAction)
+  fonction setts_fonctions? @relation(fields: [FonctionID], references: [id], map: "FK_TJFonctionUser_fonction", onDelete: NoAction, onUpdate: NoAction)
 }
 
 model TJ_ServiceUser {
   idServiceUser Int    @id(map: "PK_TJ_ServiceUser") @default(autoincrement())
   UserId        String @db.UniqueIdentifier
   ServiceID     Int?
+
+  user    aspnet_Users    @relation(fields: [UserId], references: [UserId], map: "FK_TJServiceUser_user", onDelete: NoAction, onUpdate: NoAction)
+  service setts_services? @relation(fields: [ServiceID], references: [id], map: "FK_TJServiceUser_service", onDelete: NoAction, onUpdate: NoAction)
 }

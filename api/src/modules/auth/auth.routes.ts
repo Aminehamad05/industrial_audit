@@ -3,7 +3,6 @@ import { login, register } from "./auth.service";
 import { loginRequestSchema, registerRequestSchema } from "../../shared/types/auth";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AppError } from "../../shared/errors/appError";
-import { success } from "zod";
 import fa from "zod/v4/locales/fa.cjs";
 
 export const authRouter = Router();
