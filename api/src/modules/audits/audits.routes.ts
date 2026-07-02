@@ -7,14 +7,15 @@ const router = Router();
 
 router.use(requireAuth);
 
-// Read access for both roles — auditors need to see their own assigned audits.
-router.get('/', requireRole(['ADMINISTRATOR', 'AUDITOR']), auditsController.listAudits);
+// Read access — supervisors see scoped audits via supervisorId query param.
+router.get('/', requireRole(['ADMINISTRATOR', 'AUDITOR', 'SUPERVISOR']), auditsController.listAudits);
 router.get('/dashboard', requireRole(['ADMINISTRATOR']), auditsController.getDashboardAudits);
-router.get('/:id', requireRole(['ADMINISTRATOR', 'AUDITOR']), auditsController.getAudit);
+router.get('/kpis', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.getAuditKpis);
+router.get('/:id', requireRole(['ADMINISTRATOR', 'AUDITOR', 'SUPERVISOR']), auditsController.getAudit);
 
 // Write/admin-only actions.
 router.post('/', requireRole(['ADMINISTRATOR']), auditsController.createAndAssignAudit);
 router.post('/:id/details', requireRole(['ADMINISTRATOR']), auditsController.bulkCreateDetails);
-router.patch('/:id/reassign', requireRole(['ADMINISTRATOR']), auditsController.reassignAuditor);
+router.patch('/:id/reassign', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.reassignAuditor);
 
 export default router;

@@ -5,7 +5,6 @@ import { ProtectedRoute } from '../components/ProtectedRouteProps';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import SupervisorDashboard from '../pages/SupervisorDashboard';
 import AuditorDashboard from '../pages/auditor/AuditorDashboard';
-import TechnicianDashboard from '../pages/TechnicianDashboard';
 
 const AppRoutes = () => {
   return (
@@ -17,7 +16,7 @@ const AppRoutes = () => {
         <Route
           path="/admin/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['Administrator']}>
+            <ProtectedRoute allowedRoles={['ADMINISTRATOR']}>
               <AdminDashboard />
             </ProtectedRoute>
           }
@@ -25,7 +24,7 @@ const AppRoutes = () => {
         <Route
           path="/supervisor/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['Supervisor']}>
+            <ProtectedRoute allowedRoles={['SUPERVISOR']}>
               <SupervisorDashboard />
             </ProtectedRoute>
           }
@@ -33,16 +32,8 @@ const AppRoutes = () => {
         <Route
           path="/auditor/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['Auditor']}>
+            <ProtectedRoute allowedRoles={['AUDITOR']}>
               <AuditorDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/technician/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={['MaintenanceTechnician']}>
-              <TechnicianDashboard />
             </ProtectedRoute>
           }
         />

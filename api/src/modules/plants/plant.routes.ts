@@ -4,6 +4,6 @@ import * as plantsController from './plant.controller';
 
 const router = Router();
 
-router.get('/', requireAuth, plantsController.listPlants);
+router.get('/', plantsController.listPlants);
 
 export default router;

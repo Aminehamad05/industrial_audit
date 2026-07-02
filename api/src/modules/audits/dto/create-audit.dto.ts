@@ -7,8 +7,8 @@ export interface CreateAuditDto {
   auditTargetSubarea?: string;
   auditTargetSection?: string;
   auditShiftName?: string;
-  auditorLogin: string;
-  auditorFullName: string;
+  auditorLogin?: string | null;
+  auditorFullName?: string | null;
   supervisorId?: string;
   supervisorName?: string;
   supervisorLogin?: string;

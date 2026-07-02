@@ -10,7 +10,8 @@ adminRouter.use(requireAuth, requireRole(['ADMINISTRATOR']));
 
 adminRouter.get('/users', async (req, res) => {
   try {
-    const users = await userService.listUsers();
+    const statusFilter = typeof req.query.status === 'string' ? req.query.status : undefined;
+    const users = await userService.listUsers(statusFilter);
     res.status(200).json({ users });
   } catch (err) {
     if (err instanceof AppError) return res.status(err.statusCode).json({ error: err.message });
@@ -19,7 +20,7 @@ adminRouter.get('/users', async (req, res) => {
   }
 });
 
-adminRouter.post('/users/:id/accept', async (req, res) => {
+const handleAccept = async (req: any, res: any) => {
   try {
     const membership = await userService.acceptUser(req.params.id);
     res.status(200).json({ message: 'User accepted successfully', membership });
@@ -28,9 +29,12 @@ adminRouter.post('/users/:id/accept', async (req, res) => {
     console.error('Unexpected error during accept:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+};
 
-adminRouter.post('/users/:id/block', async (req, res) => {
+adminRouter.post('/users/:id/accept', handleAccept);
+adminRouter.patch('/users/:id/accept', handleAccept);
+
+const handleBlock = async (req: any, res: any) => {
   try {
     const membership = await userService.blockUser(req.params.id);
     res.status(200).json({ message: 'User blocked successfully', membership });
@@ -39,7 +43,10 @@ adminRouter.post('/users/:id/block', async (req, res) => {
     console.error('Unexpected error during block:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
+};
+
+adminRouter.post('/users/:id/block', handleBlock);
+adminRouter.patch('/users/:id/block', handleBlock);
 
 adminRouter.delete('/users/:id', async (req, res) => {
   try {
@@ -51,8 +58,9 @@ adminRouter.delete('/users/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 adminRouter.get(
-  '/admin/users/:userId/supervisors',
+  '/users/:userId/supervisors',
   requireAuth,
   requireRole(['ADMINISTRATOR']),
   async (req, res, next) => {
@@ -66,7 +74,7 @@ adminRouter.get(
 );
 
 adminRouter.put(
-  '/admin/users/:userId/supervisors/:plantId',
+  '/users/:userId/supervisors/:plantId',
   requireAuth,
   requireRole(['ADMINISTRATOR']),
   async (req, res, next) => {
@@ -85,7 +93,7 @@ adminRouter.put(
 );
 
 adminRouter.delete(
-  '/admin/users/:userId/supervisors/:plantId',
+  '/users/:userId/supervisors/:plantId',
   requireAuth,
   requireRole(['ADMINISTRATOR']),
   async (req, res, next) => {

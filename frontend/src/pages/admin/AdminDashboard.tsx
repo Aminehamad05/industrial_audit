@@ -5,8 +5,10 @@ import { UserManagementPanel } from './UserManagementPanel';
 import { AdminKPIPanel } from './AdminKPIPanel';
 import { AuditManagementPanel } from './AuditManagementPanel';
 import { AuditResultsPanel } from './AuditResultsPanel';
+import { SchedulesPanel } from './SchedulesPanel';
+import { AuditCalendar } from '../../components/calendar/AuditCalendar';
 
-type AdminTab = 'dashboard' | 'create_audit' | 'audit_results' | 'users';
+type AdminTab = 'dashboard' | 'create_audit' | 'audit_results' | 'users' | 'schedules' | 'calendar';
 
 export const AdminHome: React.FC = () => {
   const { t } = useLanguage();
@@ -17,6 +19,8 @@ export const AdminHome: React.FC = () => {
     { key: 'create_audit', label: t('tab_create_audit') },
     { key: 'audit_results', label: t('tab_audit_results') },
     { key: 'users', label: t('tab_user_management') },
+    { key: 'schedules', label: t('tab_schedules') || 'Schedules' },
+    { key: 'calendar', label: t('tab_calendar') },
   ];
 
   return (
@@ -29,6 +33,8 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'create_audit' && <AuditManagementPanel />}
       {activeTab === 'audit_results' && <AuditResultsPanel />}
       {activeTab === 'users' && <UserManagementPanel />}
+      {activeTab === 'schedules' && <SchedulesPanel />}
+      {activeTab === 'calendar' && <AuditCalendar />}
     </DashboardLayout>
   );
 };

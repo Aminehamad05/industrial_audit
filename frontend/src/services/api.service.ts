@@ -65,7 +65,7 @@ const api = {
           user: {
             id: 'mock-admin-uuid-0000-000000000000',
             fullName: data.data?.name || 'Salah Tounsi',
-            role: 'Administrator',
+            role: 'ADMINISTRATOR',
           },
         };
 
@@ -88,7 +88,8 @@ const api = {
       password: string,
       fullName: string,
       role: string,
-      division: string
+      plant: string,
+      mentorName?: string
     ): Promise<Response> => {
       return fetch(`${BASE_URL}/auth/register`, {
         method: 'POST',
@@ -101,8 +102,17 @@ const api = {
           password,
           fullName,
           role,
-          division,
+          plant,
+          mentorName,
         }),
+      });
+    },
+    getSupervisors: async (): Promise<Response> => {
+      return fetch(`${BASE_URL}/auth/supervisors`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
     },
   },
@@ -120,7 +130,7 @@ const api = {
     },
     approveUser: async (userId: string): Promise<Response> => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      return fetch(`${BASE_URL}/admin/users/${userId}/approve`, {
+      return fetch(`${BASE_URL}/admin/users/${userId}/accept`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -130,8 +140,8 @@ const api = {
     },
     rejectUser: async (userId: string): Promise<Response> => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      return fetch(`${BASE_URL}/admin/users/${userId}/reject`, {
-        method: 'PATCH',
+      return fetch(`${BASE_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -150,8 +160,39 @@ const api = {
     },
     unblockUser: async (userId: string): Promise<Response> => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      return fetch(`${BASE_URL}/admin/users/${userId}/unblock`, {
+      return fetch(`${BASE_URL}/admin/users/${userId}/accept`, {
         method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    getSupervisorsForAuditor: async (userId: string): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/admin/users/${userId}/supervisors`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    assignSupervisorForPlant: async (userId: string, plantId: number, supervisorId: string): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/admin/users/${userId}/supervisors/${plantId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ supervisorId }),
+      });
+    },
+    removeSupervisorForPlant: async (userId: string, plantId: number): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/admin/users/${userId}/supervisors/${plantId}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -170,9 +211,40 @@ const api = {
         },
       });
     },
-    list: async (status?: string): Promise<Response> => {
+    kpis: async (params?: {
+      plantId?: number;
+      auditorLogin?: string;
+      auditType?: string;
+      from?: string;
+      to?: string;
+    }): Promise<Response> => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const url = status ? `${BASE_URL}/audits?status=${status}` : `${BASE_URL}/audits`;
+      const queryParts: string[] = [];
+      if (params?.plantId) queryParts.push(`plantId=${params.plantId}`);
+      if (params?.auditorLogin) queryParts.push(`auditorLogin=${encodeURIComponent(params.auditorLogin)}`);
+      if (params?.auditType) queryParts.push(`auditType=${encodeURIComponent(params.auditType)}`);
+      if (params?.from) queryParts.push(`from=${params.from}`);
+      if (params?.to) queryParts.push(`to=${params.to}`);
+      const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+      return fetch(`${BASE_URL}/audits/kpis${queryString}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    list: async (params?: { status?: string; auditorLogin?: string; supervisorId?: string; unassignedOnly?: boolean }): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const queryParts: string[] = [];
+      if (params?.status) queryParts.push(`status=${params.status}`);
+      if (params?.auditorLogin) queryParts.push(`auditorLogin=${params.auditorLogin}`);
+      if (params?.supervisorId) queryParts.push(`supervisorId=${params.supervisorId}`);
+      if (params?.unassignedOnly) queryParts.push('unassignedOnly=true');
+      
+      const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+      const url = `${BASE_URL}/audits${queryString}`;
+      
       return fetch(url, {
         method: 'GET',
         headers: {
@@ -225,14 +297,108 @@ const api = {
       });
     },
   },
-  plants: {
-    list: async (): Promise<Response> => {
+  schedules: {
+    calendar: async (params: { year: number; month: number; plantId?: number }): Promise<Response> => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      return fetch(`${BASE_URL}/plants`, {
+      const queryParts = [`year=${params.year}`, `month=${params.month}`];
+      if (params.plantId) queryParts.push(`plantId=${params.plantId}`);
+      return fetch(`${BASE_URL}/schedules/calendar?${queryParts.join('&')}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    list: async (plantId?: number): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const url = plantId ? `${BASE_URL}/schedules?plantId=${plantId}` : `${BASE_URL}/schedules`;
+      return fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    get: async (id: number): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/schedules/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+    create: async (data: any): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/schedules`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+    },
+    update: async (id: number, data: any): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/schedules/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+    },
+    delete: async (id: number): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/schedules/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    },
+  },
+  plants: {
+    list: async (): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return fetch(`${BASE_URL}/plants`, {
+        method: 'GET',
+        headers,
+      });
+    },
+  },
+  shifts: {
+    list: async (): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/shifts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+    },
+  },
+  supervisor: {
+    getAuditors: async (): Promise<Response> => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      return fetch(`${BASE_URL}/supervisor/auditors`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
       });
     },

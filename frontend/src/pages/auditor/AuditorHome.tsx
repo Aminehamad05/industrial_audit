@@ -5,8 +5,9 @@ import { AuditorDashboardPanel } from './AuditorDashboardPanel';
 import { MyAuditsPanel } from './MyAuditsPanel';
 import { FindingsPanel } from './FindingsPanel';
 import { ReportsPanel } from './ReportsPanel';
+import { AuditCalendar } from '../../components/calendar/AuditCalendar';
 
-type AuditorTab = 'dashboard' | 'my_audits' | 'findings' | 'reports';
+type AuditorTab = 'dashboard' | 'my_audits' | 'findings' | 'reports' | 'calendar';
 
 export const AuditorHome: React.FC = () => {
   const { t } = useLanguage();
@@ -21,6 +22,7 @@ export const AuditorHome: React.FC = () => {
     { key: 'my_audits', label: t('tab_my_audits') },
     { key: 'findings', label: t('tab_findings') },
     { key: 'reports', label: t('tab_reports') },
+    { key: 'calendar', label: t('tab_calendar') },
   ];
 
   return (
@@ -33,6 +35,7 @@ export const AuditorHome: React.FC = () => {
       {activeTab === 'my_audits' && <MyAuditsPanel />}
       {activeTab === 'findings' && <FindingsPanel />}
       {activeTab === 'reports' && <ReportsPanel />}
+      {activeTab === 'calendar' && <AuditCalendar scoped />}
     </DashboardLayout>
   );
 };

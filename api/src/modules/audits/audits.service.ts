@@ -6,7 +6,10 @@ import { CreateAuditDto } from './dto/create-audit.dto';
 interface ListAuditsFilters {
   auditorLogin?: string;
   plantId?: number;
-  status?: 'upcoming' | 'in_progress' | 'completed' | 'failed';
+  status?: 'upcoming' | 'in_progress' | 'completed' | 'failed' | 'missed';
+  supervisorId?: string;
+  supervisorLogin?: string;
+  unassignedOnly?: boolean;
 }
 
 export async function listAudits(filters: ListAuditsFilters) {
@@ -18,24 +21,69 @@ export async function listAudits(filters: ListAuditsFilters) {
   if (filters.plantId) {
     where.plantId = filters.plantId;
   }
+  if (filters.supervisorId || filters.supervisorLogin) {
+    let supervisorUserName = filters.supervisorLogin;
+    if (filters.supervisorId && !supervisorUserName) {
+      const supervisor = await prisma.aspnet_Users.findUnique({
+        where: { UserId: filters.supervisorId },
+        select: { UserName: true },
+      });
+      supervisorUserName = supervisor?.UserName ?? undefined;
+    }
 
-  const now = new Date();
-  if (filters.status === 'upcoming') {
-    where.startDate = { gt: now } as any;
-    where.endDate = null;
-  } else if (filters.status === 'in_progress') {
-    where.startDate = { lte: now } as any;
-    where.endDate = null;
-  } else if (filters.status === 'completed') {
-    where.endDate = { not: null } as any;
-    where.eliminated = false;
-  } else if (filters.status === 'failed') {
-    where.eliminated = true;
+    const affectations = filters.supervisorId
+      ? await prisma.affectationUserUserChef.findMany({
+          where: { UserIdSup: filters.supervisorId },
+          include: { user: { select: { UserName: true } } },
+        })
+      : [];
+
+    const auditorLogins = affectations
+      .map((aff) => aff.user?.UserName)
+      .filter((login): login is string => !!login);
+
+    const scope: Record<string, unknown>[] = [];
+    if (supervisorUserName) {
+      scope.push({ supervisorLogin: supervisorUserName });
+    }
+    if (auditorLogins.length > 0) {
+      scope.push({ auditorLogin: { in: auditorLogins } });
+    }
+    if (scope.length > 0) {
+      where.OR = scope;
+    }
   }
 
-  return prisma.audits.findMany({
+  if (filters.unassignedOnly) {
+    where.auditorLogin = null;
+  }
+
+  const audits = await prisma.audits.findMany({
     where: where as any,
+    include: {
+      _count: { select: { audit_details: true } },
+    },
     orderBy: { startDate: 'desc' },
+  });
+
+  if (!filters.status) return audits;
+
+  const statusMap = {
+    upcoming: 'Upcoming',
+    in_progress: 'InProgress',
+    completed: 'Completed',
+    failed: 'Failed',
+    missed: 'Missed',
+  } as const;
+
+  return audits.filter((audit) => {
+    const derived = deriveAuditStatus({
+      startDate: audit.startDate,
+      endDate: audit.endDate,
+      eliminated: audit.eliminated,
+      detailsCount: audit._count.audit_details,
+    });
+    return derived === statusMap[filters.status!];
   });
 }
 
@@ -63,8 +111,8 @@ export async function createAudit(dto: CreateAuditDto) {
       auditTargetSubarea: dto.auditTargetSubarea ?? null,
       auditTargetSection: dto.auditTargetSection ?? null,
       auditShiftName: dto.auditShiftName ?? null,
-      auditorLogin: dto.auditorLogin,
-      auditorFullName: dto.auditorFullName,
+      auditorLogin: dto.auditorLogin ?? null,
+      auditorFullName: dto.auditorFullName ?? null,
       supervisorName: dto.supervisorName ?? null,
       supervisorLogin: dto.supervisorLogin ?? null,
       startDate: new Date(dto.startDate),
@@ -191,28 +239,65 @@ export async function recomputeAuditScore(auditId: number) {
   });
 }
 
+function toCalendarDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
 export function deriveAuditStatus(audit: {
-  startDate: Date | string;
+  startDate: Date | string | null;
   endDate?: Date | string | null;
   eliminated?: boolean;
   detailsCount?: number;
 }) {
-  const now = new Date();
-  const start = new Date(audit.startDate);
   if (!audit.startDate) {
-    return new AppError(400,"Missing start Date");
+    return 'Upcoming';
   }
-  if (audit.eliminated) return 'Failed';
 
+  const start = new Date(audit.startDate);
+  const today = toCalendarDay(new Date());
+  const startDay = toCalendarDay(start);
+  const detailsCount = audit.detailsCount ?? 0;
+
+  if (audit.eliminated) return 'Failed';
   if (audit.endDate) return 'Completed';
 
-  if ((audit.detailsCount ?? 0) === 0 && start < now) {
+  if (detailsCount === 0 && startDay < today) {
     return 'Missed';
   }
 
-  if ((audit.detailsCount ?? 0) > 0) {
+  if (detailsCount > 0) {
     return 'InProgress';
   }
 
-  return 'Upcoming';
+  if (startDay > today) {
+    return 'Upcoming';
+  }
+
+  if (startDay === today) {
+    return 'Upcoming';
+  }
+
+  return 'Missed';
+}
+
+export function auditWithDerivedStatus<
+  T extends {
+    startDate: Date | string | null;
+    endDate?: Date | string | null;
+    eliminated?: boolean;
+    _count?: { audit_details: number };
+    audit_details?: unknown[];
+  },
+>(audit: T) {
+  const detailsCount =
+    audit._count?.audit_details ?? (Array.isArray(audit.audit_details) ? audit.audit_details.length : 0);
+  return {
+    ...audit,
+    derivedStatus: deriveAuditStatus({
+      startDate: audit.startDate,
+      endDate: audit.endDate,
+      eliminated: audit.eliminated,
+      detailsCount,
+    }),
+  };
 }

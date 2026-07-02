@@ -3,17 +3,19 @@ import { useLanguage } from '../../context/LanguageContext';
 import api from '../../services/api.service';
 
 interface Plant {
-  id: number;
-  designation: string;
-  family: string;
+  idPlant: number;
+  designationPlant: string | null;
 }
 
-interface User {
+interface Supervisor {
   id: string;
   username: string;
-  email: string;
   fullName: string;
-  role: string;
+}
+
+interface Shift {
+  id: number;
+  shift_name: string;
 }
 
 interface Question {
@@ -37,18 +39,22 @@ const AUDIT_TYPES = [
   { code: '5S', name: '5S Audit', nameFr: 'Audit 5S' },
 ];
 
+const SHIFTS_FALLBACK = ['Shift A', 'Shift B', 'Shift C'];
+
 export const AuditManagementPanel: React.FC = () => {
   const { t } = useLanguage();
   const [step, setStep] = useState<'create' | 'questions'>('create');
   const [auditId, setAuditId] = useState<number | null>(null);
 
   const [plants, setPlants] = useState<Plant[]>([]);
-  const [auditors, setAuditors] = useState<User[]>([]);
+  const [supervisors, setSupervisors] = useState<Supervisor[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
 
   const [auditType, setAuditType] = useState('');
   const [auditTarget, setAuditTarget] = useState('');
   const [selectedPlantId, setSelectedPlantId] = useState<number | ''>('');
-  const [selectedAuditorId, setSelectedAuditorId] = useState('');
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
+  const [selectedShift, setSelectedShift] = useState('');
   const [startDate, setStartDate] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
@@ -62,10 +68,8 @@ export const AuditManagementPanel: React.FC = () => {
   useEffect(() => {
     Promise.all([
       api.plants.list().then((r) => r.json()).then((d) => setPlants(d.plants || [])),
-      api.admin.getUsers().then((r) => r.json()).then((d) => {
-        const allUsers: User[] = d.users || [];
-        setAuditors(allUsers.filter((u) => u.role === 'Auditor'));
-      }),
+      api.auth.getSupervisors().then((r) => r.json()).then((d) => setSupervisors(d.supervisors || [])),
+      api.shifts.list().then((r) => r.json()).then((d) => setShifts(d.shifts || [])),
     ]).catch(() => {});
   }, []);
 
@@ -75,7 +79,8 @@ export const AuditManagementPanel: React.FC = () => {
     setAuditType('');
     setAuditTarget('');
     setSelectedPlantId('');
-    setSelectedAuditorId('');
+    setSelectedSupervisorId('');
+    setSelectedShift('');
     setStartDate('');
     setGroups([
       { groupPosition: 1, groupName: '', groupNameEng: '', questions: [{ questionPosition: 1, question: '', questionEng: '' }] },
@@ -88,13 +93,12 @@ export const AuditManagementPanel: React.FC = () => {
     setError('');
     setSuccess('');
 
-    if (!auditType || !auditTarget || !selectedPlantId || !selectedAuditorId || !startDate) {
+    if (!auditType || !auditTarget || !selectedPlantId || !selectedSupervisorId || !selectedShift || !startDate) {
       setError(t('err_fill_required'));
       return;
     }
 
     const selectedType = AUDIT_TYPES.find((at) => at.code === auditType);
-    const auditor = auditors.find((a) => a.id === selectedAuditorId);
 
     setCreating(true);
     try {
@@ -102,9 +106,8 @@ export const AuditManagementPanel: React.FC = () => {
         auditType,
         auditTypeName: selectedType?.name || auditType,
         auditTarget,
-        auditorId: selectedAuditorId,
-        auditorLogin: auditor?.email || '',
-        auditorFullName: auditor?.fullName || '',
+        supervisorId: selectedSupervisorId,
+        auditShiftName: selectedShift,
         plantId: Number(selectedPlantId),
         startDate: new Date(startDate).toISOString(),
       });
@@ -226,6 +229,9 @@ export const AuditManagementPanel: React.FC = () => {
         <p className="text-slate-500 text-xs mt-0.5">
           {step === 'create' ? t('create_audit_desc') : t('define_questions_desc')}
         </p>
+        {step === 'create' && (
+          <p className="text-xs text-slate-400 mt-2">{t('create_audit_supervisor_note')}</p>
+        )}
       </div>
 
       {error && (
@@ -276,21 +282,37 @@ export const AuditManagementPanel: React.FC = () => {
               >
                 <option value="">{t('select')}</option>
                 {plants.map((p) => (
-                  <option key={p.id} value={p.id}>{p.designation} ({p.family})</option>
+                  <option key={p.idPlant} value={p.idPlant}>
+                    {p.designationPlant || `Plant ${p.idPlant}`}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">{t('auditor')}</label>
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">{t('supervisor')}</label>
               <select
-                value={selectedAuditorId}
-                onChange={(e) => setSelectedAuditorId(e.target.value)}
+                value={selectedSupervisorId}
+                onChange={(e) => setSelectedSupervisorId(e.target.value)}
                 className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-hutchinson-blue/20 focus:border-hutchinson-blue"
               >
                 <option value="">{t('select')}</option>
-                {auditors.map((a) => (
-                  <option key={a.id} value={a.id}>{a.fullName} (@{a.username})</option>
+                {supervisors.map((s) => (
+                  <option key={s.id} value={s.id}>{s.fullName} (@{s.username})</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">{t('shift')}</label>
+              <select
+                value={selectedShift}
+                onChange={(e) => setSelectedShift(e.target.value)}
+                className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-hutchinson-blue/20 focus:border-hutchinson-blue"
+              >
+                <option value="">{t('select')}</option>
+                {(shifts.length > 0 ? shifts.map((s) => s.shift_name) : SHIFTS_FALLBACK).map((shift) => (
+                  <option key={shift} value={shift}>{shift}</option>
                 ))}
               </select>
             </div>

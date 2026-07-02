@@ -3,7 +3,7 @@ import { login, register } from "./auth.service";
 import { loginRequestSchema, registerRequestSchema } from "../../shared/types/auth";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AppError } from "../../shared/errors/appError";
-import fa from "zod/v4/locales/fa.cjs";
+import { listSupervisors } from "../users/user.service";
 
 export const authRouter = Router();
 
@@ -19,7 +19,9 @@ authRouter.post("/register", async (req, res) => {
       parsed.data.email,
       parsed.data.password,
       parsed.data.fullName,
-      parsed.data.role
+      parsed.data.role,
+      parsed.data.plant,
+      parsed.data.mentorName
     );
     return res.status(201).json(result);
   } catch (err) {
@@ -54,4 +56,21 @@ authRouter.post("/login", async (req, res) => {
 
 authRouter.get("/me", requireAuth, (req, res) => {
   res.status(200).json({ user: req.user });
+});
+
+authRouter.get("/supervisors", async (req, res) => {
+  try {
+    const supervisors = await listSupervisors();
+    res.status(200).json({
+      supervisors: supervisors.map((s) => ({
+        id: s.UserId,
+        username: s.UserName,
+        email: s.Email,
+        fullName: s.Name,
+      })),
+    });
+  } catch (err) {
+    console.error("Unexpected error fetching supervisors:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });

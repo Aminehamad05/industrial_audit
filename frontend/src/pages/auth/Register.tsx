@@ -19,7 +19,6 @@ interface ApiErrorResponse {
 const ROLES = [
   { value: 'Auditor' },
   { value: 'Supervisor' },
-  { value: 'MaintenanceTechnician' },
   { value: 'Administrator' },
 ];
 
@@ -37,8 +36,12 @@ export const Register: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('Auditor');
-  const [division, setDivision] = useState('FMS');
   const [loading, setLoading] = useState(false);
+
+  const [plants, setPlants] = useState<{ idPlant: number; designationPlant: string | null }[]>([]);
+  const [selectedPlant, setSelectedPlant] = useState('');
+  const [supervisors, setSupervisors] = useState<{ id?: string; UserId?: string; fullName?: string | null; Name?: string | null; username?: string | null; UserName?: string | null }[]>([]);
+  const [selectedSupervisor, setSelectedSupervisor] = useState('');
 
   // Field validation errors
   const [fullNameError, setFullNameError] = useState('');
@@ -46,9 +49,38 @@ export const Register: React.FC = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [divisionError, setDivisionError] = useState('');
+  const [plantError, setPlantError] = useState('');
+  const [supervisorError, setSupervisorError] = useState('');
   const [generalError, setGeneralError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  React.useEffect(() => {
+    const loadRegData = async () => {
+      try {
+        const plantRes = await api.plants.list();
+        if (plantRes.ok) {
+          const plantData = await plantRes.json();
+          const list = plantData.plants || [];
+          setPlants(list);
+          if (list.length > 0) {
+            setSelectedPlant(list[0].designationPlant || '');
+          }
+        }
+        const supRes = await api.auth.getSupervisors();
+        if (supRes.ok) {
+          const supData = await supRes.json();
+          const list = supData.supervisors || [];
+          setSupervisors(list);
+          if (list.length > 0) {
+            setSelectedSupervisor(list[0].fullName || list[0].Name || '');
+          }
+        }
+      } catch (err) {
+        console.error('Error loading registration data:', err);
+      }
+    };
+    loadRegData();
+  }, []);
 
   // Form validator
   const validateForm = (): boolean => {
@@ -109,12 +141,20 @@ export const Register: React.FC = () => {
       setConfirmPasswordError('');
     }
 
-    // Division
-    if (!division) {
-      setDivisionError(t('err_division_required'));
+    // Plant
+    if (!selectedPlant) {
+      setPlantError(t('err_plant_required'));
       isValid = false;
     } else {
-      setDivisionError('');
+      setPlantError('');
+    }
+
+    // Supervisor
+    if (role === 'Auditor' && !selectedSupervisor) {
+      setSupervisorError(t('err_supervisor_required'));
+      isValid = false;
+    } else {
+      setSupervisorError('');
     }
 
     return isValid;
@@ -130,7 +170,15 @@ export const Register: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.auth.register(username, email, password, fullName, role, division);
+      const response = await api.auth.register(
+        username,
+        email,
+        password,
+        fullName,
+        role.toUpperCase(),
+        selectedPlant,
+        role === 'Auditor' ? selectedSupervisor : undefined
+      );
       const data = await response.json();
 
       if (!response.ok) {
@@ -150,8 +198,11 @@ export const Register: React.FC = () => {
           if (details.password?._errors?.[0]) {
             setPasswordError(t(details.password._errors[0]) || details.password._errors[0]);
           }
-          if (details.division?._errors?.[0]) {
-            setDivisionError(t(details.division._errors[0]) || details.division._errors[0]);
+          if (details.plant?._errors?.[0]) {
+            setPlantError(t(details.plant._errors[0]) || details.plant._errors[0]);
+          }
+          if (details.mentorName?._errors?.[0]) {
+            setSupervisorError(t(details.mentorName._errors[0]) || details.mentorName._errors[0]);
           }
         }
         const rawError = errorData.error || errorData.message || 'Registration failed';
@@ -325,20 +376,20 @@ export const Register: React.FC = () => {
             </div>
           </div>
 
-          {/* Division Select field */}
-          <div className="flex flex-col w-full mb-8 font-sans">
+          {/* Plant Dropdown */}
+          <div className="flex flex-col w-full mb-5 font-sans">
             <label
-              htmlFor="division-field"
+              htmlFor="plant-field"
               className="mb-2 text-sm font-semibold text-slate-700 text-left"
             >
-              {t('division')}
+              {t('plant')}
               <span className="text-hutchinson-red ml-1">*</span>
             </label>
             <div className="relative w-full">
               <select
-                id="division-field"
-                value={division}
-                onChange={(e) => setDivision(e.target.value)}
+                id="plant-field"
+                value={selectedPlant}
+                onChange={(e) => setSelectedPlant(e.target.value)}
                 disabled={loading}
                 className="
                   w-full px-4 h-[52px] rounded-[12px] border border-slate-200 text-base text-slate-900 bg-white
@@ -347,25 +398,67 @@ export const Register: React.FC = () => {
                   disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
                 "
               >
-                {DIVISIONS.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {t(d.labelKey)}
+                {plants.map((p) => (
+                  <option key={p.idPlant} value={p.designationPlant || ''}>
+                    {p.designationPlant}
                   </option>
                 ))}
               </select>
-              {/* Custom select chevron */}
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
-            {divisionError && (
+            {plantError && (
               <span className="mt-1.5 text-sm text-hutchinson-red font-medium text-left leading-normal animate-fade-in">
-                {divisionError}
+                {plantError}
               </span>
             )}
           </div>
+
+          {/* Supervisor Dropdown (for Auditor role only) */}
+          {role === 'Auditor' && (
+            <div className="flex flex-col w-full mb-8 font-sans">
+              <label
+                htmlFor="supervisor-field"
+                className="mb-2 text-sm font-semibold text-slate-700 text-left"
+              >
+                {t('supervisor')}
+                <span className="text-hutchinson-red ml-1">*</span>
+              </label>
+              <div className="relative w-full">
+                <select
+                  id="supervisor-field"
+                  value={selectedSupervisor}
+                  onChange={(e) => setSelectedSupervisor(e.target.value)}
+                  disabled={loading}
+                  className="
+                    w-full px-4 h-[52px] rounded-[12px] border border-slate-200 text-base text-slate-900 bg-white
+                    appearance-none focus:border-hutchinson-blue focus:ring-4 focus:ring-hutchinson-blue/12
+                    transition-all duration-200 ease-in-out cursor-pointer
+                    disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed
+                  "
+                >
+                  {supervisors.map((s) => (
+                    <option key={s.id || s.UserId} value={s.fullName || s.Name || ''}>
+                      {s.fullName || s.Name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              {supervisorError && (
+                <span className="mt-1.5 text-sm text-hutchinson-red font-medium text-left leading-normal animate-fade-in">
+                  {supervisorError}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Register Button */}
           <button

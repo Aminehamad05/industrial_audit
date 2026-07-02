@@ -4,6 +4,9 @@ import { authRouter } from "./modules/auth/auth.routes";
 import { adminRouter } from "./modules/users/user.routes";
 import auditRoutes from "./modules/audits/audits.routes";
 import plantRoutes from "./modules/plants/plant.routes";
+import schedulesRoutes from "./modules/schedules/schedules.routes";
+import shiftsRoutes from "./modules/shifts/shifts.routes";
+import { supervisorRouter } from "./modules/users/supervisor.routes";
 import {requireAuth} from "./middleware/auth.middleware"
 export const app = express();
 
@@ -19,3 +22,6 @@ app.use("/auth", authRouter);
 app.use("/admin",adminRouter)
 app.use("/audits", auditRoutes);
 app.use("/plants", plantRoutes);
+app.use("/schedules", schedulesRoutes);
+app.use("/shifts", shiftsRoutes);
+app.use("/supervisor", supervisorRouter);

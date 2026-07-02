@@ -1,16 +1,60 @@
 import { prisma } from '../../db/prisma';
 import { AppError } from '../../shared/errors/appError';
 
-export async function listUsers() {
-  return prisma.aspnet_Users.findMany({
-    select: {
-      UserId: true,
-      UserName: true,
-      Email: true,
-      Name: true,
-      LastActivityDate: true,
-      status: true,
+export async function listUsers(statusFilter?: string) {
+  const where: any = {};
+  if (statusFilter) {
+    const f = statusFilter.toLowerCase();
+    if (f === 'active' || f === 'approved') {
+      where.status = { in: ['Active', 'Approved', 'approved'] };
+    } else if (f === 'pending') {
+      where.status = 'Pending';
+    } else if (f === 'blocked') {
+      where.status = { in: ['Blocked', 'blocked'] };
+    } else if (f === 'rejected' || f === 'deleted') {
+      where.status = { in: ['Rejected', 'Deleted', 'deleted'] };
+    }
+  }
+
+  const users = await prisma.aspnet_Users.findMany({
+    where,
+    include: {
+      aspnet_UsersInRoles: {
+        include: {
+          aspnet_Roles: true,
+        },
+      },
     },
+  });
+
+  return users.map(user => {
+    let mappedStatus: 'Pending' | 'Active' | 'Blocked' | 'Rejected' = 'Pending';
+    const s = user.status.toLowerCase();
+    if (s === 'active' || s === 'approved') {
+      mappedStatus = 'Active';
+    } else if (s === 'blocked') {
+      mappedStatus = 'Blocked';
+    } else if (s === 'deleted' || s === 'rejected') {
+      mappedStatus = 'Rejected';
+    }
+
+    const dbRole = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName || 'AUDITOR';
+    let mappedRole = 'Auditor';
+    if (dbRole.toUpperCase() === 'ADMINISTRATOR') {
+      mappedRole = 'Administrator';
+    } else if (dbRole.toUpperCase() === 'SUPERVISOR') {
+      mappedRole = 'Supervisor';
+    }
+
+    return {
+      id: user.UserId,
+      username: user.UserName,
+      email: user.Email,
+      fullName: user.Name,
+      role: mappedRole,
+      accountStatus: mappedStatus,
+      createdAt: user.LastActivityDate,
+    };
   });
 }
 
@@ -48,7 +92,7 @@ export async function deleteUser(userId: string) {
   const [, updatedMembership] = await prisma.$transaction([
     prisma.aspnet_Users.update({
       where: { UserId: userId },
-      data: { status: 'deleted' },
+      data: { status: 'Deleted' },
     }),
     prisma.aspnet_Membership.update({
       where: { UserId: userId },
@@ -69,7 +113,7 @@ export async function acceptUser(userId: string) {
   const [, updatedMembership] = await prisma.$transaction([
     prisma.aspnet_Users.update({
       where: { UserId: userId },
-      data: { status: 'approved' },
+      data: { status: 'Active' },
     }),
     prisma.aspnet_Membership.update({
       where: { UserId: userId },
@@ -89,7 +133,7 @@ export async function blockUser(userId: string) {
   const [, updatedMembership] = await prisma.$transaction([
     prisma.aspnet_Users.update({
       where: { UserId: userId },
-      data: { status: 'blocked' },
+      data: { status: 'Blocked' },
     }),
     prisma.aspnet_Membership.update({
       where: { UserId: userId },
@@ -189,4 +233,58 @@ export async function removeAuditorSupervisor(auditorId: string, plantId: number
     where: { idaffectuser: existing.idaffectuser },
     data: { UserIdSup: null },
   });
+}
+
+export async function listSupervisors() {
+  return prisma.aspnet_Users.findMany({
+    where: {
+      aspnet_UsersInRoles: {
+        some: {
+          aspnet_Roles: {
+            LoweredRoleName: 'supervisor',
+          },
+        },
+      },
+      status: { in: ['Active', 'Approved', 'approved'] },
+    },
+    select: {
+      UserId: true,
+      UserName: true,
+      Email: true,
+      Name: true,
+    },
+  });
+}
+
+export async function listSupervisorAuditors(supervisorId: string) {
+  const affectations = await prisma.affectationUserUserChef.findMany({
+    where: { UserIdSup: supervisorId },
+    include: {
+      user: {
+        select: {
+          UserId: true,
+          UserName: true,
+          Email: true,
+          Name: true,
+        },
+      },
+      plant: {
+        select: {
+          idPlant: true,
+          designationPlant: true,
+        },
+      },
+    },
+  });
+
+  return affectations
+    .filter((aff) => aff.user)
+    .map((aff) => ({
+      id: aff.user!.UserId,
+      username: aff.user!.UserName,
+      email: aff.user!.Email,
+      fullName: aff.user!.Name,
+      plantId: aff.idPlant,
+      plantName: aff.plant?.designationPlant ?? null,
+    }));
 }
