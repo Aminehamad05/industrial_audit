@@ -6,7 +6,7 @@ export const AdminKPIPanel: React.FC = () => {
   const { t } = useLanguage();
   const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
   const userData = storedUser ? JSON.parse(storedUser) : null;
-  const fullName = userData?.fullName || 'Admin';
+  const fullName = userData?.fullName ;
 
   return (
     <KPIDashboard

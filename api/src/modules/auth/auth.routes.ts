@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, register } from "./auth.service";
+import { login, register, findUserById } from "./auth.service";
 import { loginRequestSchema, registerRequestSchema } from "../../shared/types/auth";
 import { requireAuth, requireRole } from "../../middleware/auth.middleware";
 import { AppError } from "../../shared/errors/appError";
@@ -54,8 +54,25 @@ authRouter.post("/login", async (req, res) => {
 
  
 
-authRouter.get("/me", requireAuth, (req, res) => {
-  res.status(200).json({ user: req.user });
+authRouter.get("/me", requireAuth, async (req, res) => {
+  try {
+    const fullUser = await findUserById(req.user!.userId);
+    if (!fullUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({
+      user: {
+        id: fullUser.UserId,
+        fullName: fullUser.Name || fullUser.UserName || "",
+        username: fullUser.UserName,
+        role: req.user!.role,
+        status: fullUser.status,
+      },
+    });
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 authRouter.get("/supervisors", async (req, res) => {

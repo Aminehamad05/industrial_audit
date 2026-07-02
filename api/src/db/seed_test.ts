@@ -77,13 +77,13 @@ async function main() {
     let role = await prisma.aspnet_Roles.findFirst({
       where: {
         LoweredRoleName: roleName.toLowerCase(),
-        ApplicationId: app.ApplicationId,
+        ApplicationId: app!.ApplicationId,
       },
     });
     if (!role) {
       role = await prisma.aspnet_Roles.create({
         data: {
-          ApplicationId: app.ApplicationId,
+          ApplicationId: app!.ApplicationId,
           RoleName: roleName,
           LoweredRoleName: roleName.toLowerCase(),
           idPlant: null,
@@ -113,7 +113,7 @@ async function main() {
     await prisma.aspnet_Users.create({
       data: {
         UserId: userId,
-        ApplicationId: app.ApplicationId,
+        ApplicationId: app!.ApplicationId,
         UserName: opts.userName,
         LoweredUserName: normalizedUserName,
         Email: normalizedEmail,
@@ -127,7 +127,7 @@ async function main() {
 
     await prisma.aspnet_Membership.create({
       data: {
-        ApplicationId: app.ApplicationId,
+        ApplicationId: app!.ApplicationId,
         UserId: userId,
         Password: passwordHash,
         PasswordFormat: 1,

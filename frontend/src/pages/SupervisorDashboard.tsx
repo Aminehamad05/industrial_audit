@@ -4,6 +4,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { KPIDashboard } from '../components/kpi/KPIDashboard';
 import { AuditCalendar } from '../components/calendar/AuditCalendar';
 import { SupervisorAssignPanel } from '../components/supervisor/SupervisorAssignPanel';
+import { SupervisorCreateAuditPanel } from '../components/supervisor/SupervisorCreateAuditPanel';
 import api from '../services/api.service';
 
 interface AuditDetailItem {
@@ -103,6 +104,7 @@ export const SupervisorDashboard: React.FC = () => {
 
   const tabs = [
     { key: 'dashboard', label: t('tab_dashboard') },
+    { key: 'create', label: t('create_audit') },
     { key: 'audits', label: t('supervised_audits') || 'Audits Supervised' },
     { key: 'calendar', label: t('tab_calendar') },
   ];
@@ -135,6 +137,10 @@ export const SupervisorDashboard: React.FC = () => {
       )}
 
       {activeTab === 'calendar' && <AuditCalendar scoped />}
+
+      {activeTab === 'create' && (
+        <SupervisorCreateAuditPanel onCreated={() => setRefreshKey((k) => k + 1)} />
+      )}
 
       {activeTab === 'audits' && (
       <div className="flex flex-col gap-6 w-full text-left font-sans">

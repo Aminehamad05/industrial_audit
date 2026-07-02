@@ -13,9 +13,9 @@ router.get('/dashboard', requireRole(['ADMINISTRATOR']), auditsController.getDas
 router.get('/kpis', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.getAuditKpis);
 router.get('/:id', requireRole(['ADMINISTRATOR', 'AUDITOR', 'SUPERVISOR']), auditsController.getAudit);
 
-// Write/admin-only actions.
-router.post('/', requireRole(['ADMINISTRATOR']), auditsController.createAndAssignAudit);
-router.post('/:id/details', requireRole(['ADMINISTRATOR']), auditsController.bulkCreateDetails);
+// Write actions — admins can assign any supervisor, supervisors self-assign.
+router.post('/', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.createAndAssignAudit);
+router.post('/:id/details', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.bulkCreateDetails);
 router.patch('/:id/reassign', requireRole(['ADMINISTRATOR', 'SUPERVISOR']), auditsController.reassignAuditor);
 
 export default router;

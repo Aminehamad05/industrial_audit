@@ -25,6 +25,13 @@ function issueToken(payload: JwtPayload): string {
   });
 }
 
+export async function findUserById(userId: string) {
+  return prisma.aspnet_Users.findUnique({
+    where: { UserId: userId },
+    select: { UserId: true, Name: true, UserName: true, Email: true, status: true },
+  });
+}
+
 export function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 }
@@ -256,6 +263,7 @@ export async function login(email: string, password: string) {
     user: {
       id: user.UserId,
       fullName: user.Name || user.UserName || "",
+      username: user.UserName,
       role: roleName,
     },
   };

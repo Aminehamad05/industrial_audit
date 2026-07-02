@@ -24,63 +24,75 @@ Industrial Audit/
 │   │   │   └── auth.middleware.ts # requireAuth + requireRole
 │   │   ├── modules/
 │   │   │   ├── auth/
-│   │   │   │   ├── auth.routes.ts    # POST /auth/register, /login; GET /auth/me
-│   │   │   │   └── auth.service.ts   # Register + login via ASP.NET tables
+│   │   │   │   ├── auth.routes.ts    # POST /auth/register, /login; GET /auth/me, /supervisors
+│   │   │   │   └── auth.service.ts   # Register + login via ASP.NET tables (includes plant + mentor)
 │   │   │   ├── users/
-│   │   │   │   ├── user.routes.ts    # GET /admin/users, PATCH/accept, /block, DELETE
-│   │   │   │   └── user.service.ts   # CRUD on aspnet_Users
+│   │   │   │   ├── user.routes.ts    # /admin/users CRUD, supervisor assignments, accept/block/delete
+│   │   │   │   ├── user.service.ts   # listUsers, getUserById, userHasRole, supervisor management
+│   │   │   │   └── supervisor.routes.ts # /supervisor/auditors
 │   │   │   ├── audits/
-│   │   │   │   ├── audits.routes.ts      # GET/POST /audits, /dashboard, /reassign
-│   │   │   │   ├── audits.controller.ts  # Orchestration + validation
-│   │   │   │   ├── audits.service.ts     # Business logic
+│   │   │   │   ├── audits.routes.ts      # GET/POST /audits, /dashboard, /kpis, /reassign
+│   │   │   │   ├── audits.controller.ts  # Orchestration + validation (correct field names)
+│   │   │   │   ├── audits.service.ts     # listAudits, deriveAuditStatus, recomputeAuditScore
+│   │   │   │   ├── kpis.service.ts       # Full KPI engine (summary, trends, by-auditor/by-plant)
 │   │   │   │   └── dto/create-audit.dto.ts
-│   │   │   └── plants/
-│   │   │       ├── plant.routes.ts       # GET /plants only (CRUD in service exists)
-│   │   │       ├── plant.controller.ts   # Full CRUD orchestration
-│   │   │       ├── plant.service.ts      # Full CRUD + dashboard + schedules
-│   │   │       └── dto/
-│   │   │           ├── create-plant.dto.ts
-│   │   │           └── update-plant.dto.ts
+│   │   │   ├── plants/
+│   │   │   │   ├── plant.routes.ts       # GET /plants only (CRUD in service exists)
+│   │   │   │   ├── plant.controller.ts   # Full CRUD orchestration
+│   │   │   │   ├── plant.service.ts      # Full CRUD + dashboard + schedules
+│   │   │   │   └── dto/
+│   │   │   ├── schedules/
+│   │   │   │   ├── schedules.routes.ts   # Full CRUD + /calendar
+│   │   │   │   ├── schedules.controller.ts
+│   │   │   │   ├── schedules.service.ts
+│   │   │   │   └── calendar.service.ts
+│   │   │   └── shifts/
+│   │   │       └── shifts.routes.ts      # GET /shifts
 │   │   └── shared/
 │   │       ├── errors/
 │   │       │   ├── appError.ts
 │   │       │   └── domain-error.ts
-│   │       └── types/auth.ts      # Zod schemas for login/register
+│   │       └── types/auth.ts      # Zod schemas for login/register, JwtPayload
 │   └── package.json
 ├── frontend/                      # Vite + React 19 + Tailwind 4
 │   └── src/
-│       ├── services/api.service.ts  # Axios-based API client (hardcoded localhost:3000)
-│       ├── pages/admin/             # Admin dashboard (real API calls)
-│       ├── pages/auditor/           # Auditor panels (mock data only)
+│       ├── services/api.service.ts  # API client (login, admin, audits, plants, schedules, shifts)
+│       ├── pages/admin/             # Admin dashboard (real API calls for all panels)
+│       ├── pages/auditor/           # Auditor panels (real API for dashboard + my audits)
 │       ├── pages/auth/              # Login + Register
-│       ├── components/              # Reusable UI components
+│       ├── components/
+│       │   ├── kpi/KPIDashboard.tsx  # Recharts-based KPI dashboard (real API)
+│       │   └── dashboard/           # Card, badges, empty state
 │       ├── routes/AppRoutes.tsx     # Route definitions + role guards
-│       └── translations.ts          # Bilingual FR/EN (507 lines)
+│       ├── config/roleRoutes.ts     # Role → home route mapping
+│       ├── translations.ts          # Bilingual FR/EN
+│       └── layouts/DashboardLayout.tsx
 └── docker-compose.yml             # SQL Server 2022 on port 1433
 ```
 
 ## Database Architecture
 
 ### Core Tables
-| Table | Prisma Model | Key Fields |
+| Table | Prisma Model | Key Notes |
 |---|---|---|
-| `audits` | `audits` (camelCase fields with @map) | `id`, `audit_type`, `auditor_login`, `auditor_full_name`, `start_date`, `end_date`, `idplant` |
-| `audit_details` | `audit_details` | `audit_id`, `answer_OK`, `answer_NOK`, `answer_NC`, `answer_NA` (all Boolean, required) |
+| `audits` | `audits` | Fields use camelCase with @map to snake_case. Relations: auditor via `auditorLogin`→`aspnet_Users.UserName` |
+| `audit_details` | `audit_details` | Boolean fields: `answerOk`, `answerNok`, `answerNc`, `answerNa`. Has `ponderation` + `eliminatoire` |
 | `actions` | `actions` | Linked to audit_details + setts_action_status |
 | `schedules` | `schedules` | Linked to plants |
-| `plant` | `plant` (singular!) | PK: `idPlant` (Int, name `idPlant` in Prisma) |
-| `aspnet_Users` | `aspnet_Users` | PK: `UserId` (UUID, field name `UserId`). Fields: `Name`, `Email`, `UserName`, `passwordHash`, `status` |
+| `plant` | `plant` (singular!) | PK: `idPlant` (Int) |
+| `aspnet_Users` | `aspnet_Users` | PK: `UserId` (UUID). Fields: `Name`, `Email`, `UserName`, `passwordHash`, `status` |
 
-### Auth Tables (Legacy ASP.NET Membership)
+### Auth Tables
 - `aspnet_Applications` — Application registry (one "development" row required)
 - `aspnet_Roles` — Roles: `ADMINISTRATOR`, `AUDITOR`, `SUPERVISOR`
 - `aspnet_UsersInRoles` — M2M user ↔ role
 - `aspnet_Membership` — Legacy membership data
 
 ### Key Schema Rules
-- Model names match table names directly (no `@@map`), BUT field names are camelCase with `@map` to snake_case columns for most models.
-- Exception: `aspnet_Users` uses PascalCase field names (`UserId`, `UserName`, `Name`, `Email`) matching actual column names — no `@map`.
-- `plant` model is singular; its PK is `idPlant` (not `id`). The audits relation uses `plantId` → `idPlant`.
+- `audits` model has NO `auditorId` or `supervisorId` field — joins to `aspnet_Users` via `auditorLogin` / `supervisorLogin` (which map to `UserName`)
+- `aspnet_Users` uses PascalCase field names (`UserId`, `UserName`, `Name`, `Email`) — no `@map`
+- All other models use camelCase fields with `@map` to snake_case DB columns
+- `plant` model is singular; PK is `idPlant`
 
 ## Role Names (Uppercase)
 ```
@@ -89,38 +101,68 @@ AUDITOR        — perform audits
 SUPERVISOR     — supervise auditors
 ```
 
-## Known Issues (22 TS Errors)
+## API Endpoints
 
-### audits.controller.ts (15 errors)
-Wrong field names — code was written against a conceptual clean schema:
+| Path | Method | Auth | Description |
+|---|---|---|---|
+| `/health` | GET | — | Health check |
+| `/auth/login` | POST | — | Login, returns `{ token, user: { id, fullName, username, role } }` |
+| `/auth/register` | POST | — | Register (username, email, password, fullName, role, plant, mentorName) |
+| `/auth/me` | GET | JWT | Current user profile |
+| `/auth/supervisors` | GET | — | List supervisors |
+| `/admin/users` | GET | ADMINISTRATOR | List users (optional `?status=` filter) |
+| `/admin/users/:id/accept` | PATCH | ADMINISTRATOR | Approve user |
+| `/admin/users/:id/block` | PATCH | ADMINISTRATOR | Block user |
+| `/admin/users/:id` | DELETE | ADMINISTRATOR | Soft-delete user |
+| `/admin/users/:userId/supervisors` | GET | ADMINISTRATOR | Get auditor's supervisor assignments |
+| `/admin/users/:userId/supervisors/:plantId` | PUT/DELETE | ADMINISTRATOR | Set/remove auditor supervisor |
+| `/audits` | GET | ADMIN/AUDITOR/SUPERVISOR | List audits (`?auditorLogin=&plantId=&status=&supervisorId=&unassignedOnly=`) |
+| `/audits/dashboard` | GET | ADMINISTRATOR | Dashboard audit list with derived status |
+| `/audits/kpis` | GET | ADMINISTRATOR/SUPERVISOR | Full KPI data (`?plantId=&auditorLogin=&auditType=&from=&to=`) |
+| `/audits/:id` | GET | ADMIN/AUDITOR/SUPERVISOR | Audit details with answers + actions |
+| `/audits` | POST | ADMINISTRATOR/SUPERVISOR | Create audit (supervisor auto-assigns via JWT) |
+| `/audits/:id/details` | POST | ADMINISTRATOR/SUPERVISOR | Bulk create audit details |
+| `/audits/:id/reassign` | PATCH | ADMINISTRATOR/SUPERVISOR | Reassign auditor |
+| `/schedules` | GET/POST | GET: any auth / POST: ADMIN | Schedule CRUD |
+| `/schedules/calendar` | GET | Any auth | Calendar view (`?year=&month=&plantId=`) |
+| `/schedules/:id` | GET/PUT/DELETE | GET: any auth / PUT/DEL: ADMIN | Single schedule CRUD |
+| `/plants` | GET | Any auth | List plants |
+| `/shifts` | GET | Any auth | List shifts |
+| `/supervisor/auditors` | GET | SUPERVISOR | Supervisor's team auditors |
 
-| Line | Writes | Should Be |
+## Auditor Login Flow
+- Login returns `{ token, user: { id, fullName, username, role } }`.
+- `username` is `aspnet_Users.UserName` — used to filter audits via `?auditorLogin=` query param.
+- Frontend stores `username` from login response and passes it to API calls.
+
+## Frontend State
+
+| Panel | Data Source | Status |
 |---|---|---|
-| 48, 101 | `auditor.role` | No `role` on `aspnet_Users`; check via `aspnet_UsersInRoles` → `aspnet_Roles` |
-| 73, 80, 106 | `auditor.id` | `auditor.UserId` |
-| 74, 78, 106 | `auditor.email` | `auditor.Email` |
-| 75, 77, 106 | `auditor.full_name` | `auditor.Name` |
-| 80 | `plant.id` | `plant.idPlant` |
-| 17, 30, 161 | `deriveAuditStatus` gets `Date \| null` | Function expects `string \| Date` (needs null guard or type fix) |
-
-### audits.service.ts (1 error)
-Line 136: `createMany` payload for `audit_details` missing required fields: `answerOk`, `answerNok`, `answerNc`, `answerNa` (all Boolean).
+| Admin KPI Dashboard | Real API (`/audits/kpis`) | ✅ Working |
+| Admin Audit Management | Real API (create + questions) | ✅ Working |
+| Admin Audit Results | Real API (`/audits/dashboard` + `/audits/:id`) | ✅ Working |
+| Admin User Management | Real API (CRUD, supervisor assignment) | ✅ Working |
+| Admin Schedules | Real API (CRUD via schedules endpoints) | ✅ Working |
+| Admin Calendar | Real API (`/schedules/calendar`) | ✅ Working |
+| Auditor Dashboard | Real API (`/audits?auditorLogin=`) | ✅ Updated |
+| Auditor My Audits | Real API (`/audits?auditorLogin=`, filter by status) | ✅ Updated |
+| Auditor Findings | Mock data (TODO) | ❌ Mock |
+| Auditor Reports | Mock data (TODO) | ❌ Mock |
+| Supervisor Dashboard | Real API (KPIs, audit list, create audit, assign auditors, calendar) | ✅ Complete |
+| Supervisor Create Audit | Real API (2-step: create + define questions, assign to team auditor) | ✅ Complete |
 
 ## Commands
 
 ```bash
-# Backend
 cd api
 npm install
 npx prisma generate        # Generate Prisma Client
 npm run dev                # tsx watch src/server.ts
 npm run build              # tsc -p tsconfig.json
 npm run seed               # tsx src/db/seed_simple.ts
+npx tsc --noEmit           # Verify compilation
 
-# Verify compilation
-npx tsc --noEmit
-
-# Frontend
 cd frontend
 npm install
 npm run dev                # Vite dev server
@@ -128,23 +170,9 @@ npm run dev                # Vite dev server
 
 ## Coding Conventions
 - No JSDoc comments. Minimal inline comments.
-- Error handling: custom `AppError` class with `statusCode` + `message`, or `NotFoundError`/`DomainError` from `domain-error.ts`
+- Error handling: custom `AppError` class with `statusCode` + `message`, or `NotFoundError`/`DomainError`/`ForbiddenError` from `domain-error.ts`
 - Auth middleware: `requireAuth` + `requireRole([...])` on routes
 - Prisma client: imported as singleton from `../../db/prisma`
 - Seed scripts in `api/src/db/`, NOT in `api/prisma/`
-- `package.json` has duplicate `@prisma/client` and `prisma` entries (merge artifact from npm install)
-
-## Important Paths
-
-| Purpose | Path |
-|---|---|
-| Prisma schema | `api/prisma/schema.prisma` |
-| Main seed script | `api/src/db/seed_simple.ts` |
-| Comprehensive seed | `api/src/db/seed_new.ts` |
-| Prisma client singleton | `api/src/db/prisma.ts` |
-| Auth services | `api/src/modules/auth/auth.service.ts` |
-| User admin services | `api/src/modules/users/user.service.ts` |
-| Audit services | `api/src/modules/audits/audits.service.ts` |
-| Plant services | `api/src/modules/plants/plant.service.ts` |
-| Frontend API client | `frontend/src/services/api.service.ts` |
-| Environment config | `api/.env` |
+- Frontend: `api.service.ts` uses raw `fetch()`, no Axios
+- JWT payload: `{ userId: string, role: Role }` — stores UserId, not UserName

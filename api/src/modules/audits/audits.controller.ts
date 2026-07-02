@@ -66,24 +66,38 @@ export async function createAndAssignAudit(req: Request, res: Response, next: Ne
   try {
     const dto = req.body;
 
-    if (!dto.supervisorId) {
-      throw new DomainError('supervisorId is required', 400);
-    }
     if (!dto.auditShiftName) {
       throw new DomainError('auditShiftName is required', 400);
     }
 
-    const supervisor = await usersService.getUserById(dto.supervisorId);
+    // Resolve supervisor — supervisors self-assign via JWT, admins pick from body
+    let supervisorId = dto.supervisorId;
+    if (req.user?.role === 'SUPERVISOR') {
+      supervisorId = req.user.userId;
+    }
+    if (!supervisorId) {
+      throw new DomainError('supervisorId is required', 400);
+    }
+
+    const supervisor = await usersService.getUserById(supervisorId);
     if (!supervisor) {
-      throw new NotFoundError(`Supervisor ${dto.supervisorId} not found`);
+      throw new NotFoundError(`Supervisor ${supervisorId} not found`);
     }
     if (!(await usersService.userHasRole(supervisor.UserId, 'SUPERVISOR'))) {
-      throw new DomainError(`User ${dto.supervisorId} is not a Supervisor`, 400);
+      throw new DomainError(`User ${supervisorId} is not a Supervisor`, 400);
     }
 
     let auditorLogin: string | null = null;
     let auditorFullName: string | null = null;
     if (dto.auditorId) {
+      // Supervisors can only assign auditors from their own team
+      if (req.user?.role === 'SUPERVISOR') {
+        const team = await usersService.listSupervisorAuditors(req.user.userId);
+        if (!team.some((member) => member.id === dto.auditorId)) {
+          throw new ForbiddenError('Auditor is not in your assigned team');
+        }
+      }
+
       const auditor = await usersService.getUserById(dto.auditorId);
       if (!auditor) {
         throw new NotFoundError(`Auditor ${dto.auditorId} not found`);

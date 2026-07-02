@@ -1,63 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { EmptyState } from '../../components/dashboard/EmptyState';
-import { mockAudits } from './mockAuditorData';
-import type { Audit } from './mockAuditorData';
+import api from '../../services/api.service';
 
-type AuditFilter = 'All' | 'Planned' | 'In Progress' | 'Completed';
+type AuditFilter = 'All' | 'Planned' | 'In Progress' | 'Completed' | 'Missed';
+
+interface AuditRow {
+  id: number;
+  auditTypeName: string;
+  auditTarget: string;
+  auditorFullName: string;
+  auditorLogin: string;
+  auditShiftName: string;
+  plantId: number;
+  supervisorName: string;
+  startDate: string;
+  endDate: string | null;
+  score: number | null;
+  eliminated: boolean;
+  derivedStatus: string;
+}
+
+const STATUS_MAP: Record<string, string> = {
+  Upcoming: 'Planned',
+  InProgress: 'In Progress',
+  Completed: 'Completed',
+  Failed: 'Completed',
+  Missed: 'Missed',
+};
 
 const auditStatusStyles: Record<string, string> = {
   Planned: 'bg-slate-100 text-slate-700 border-slate-200/50',
-  'In Progress': 'bg-hutchinson-blue/10 text-hutchinson-blue border-hutchinson-blue/20',
+  'In Progress': 'bg-blue-50 text-blue-700 border-blue-200/20',
   Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200/50',
+  Missed: 'bg-rose-50 text-rose-700 border-rose-200/50',
+};
+
+const FILTER_TO_STATUS: Record<string, string | undefined> = {
+  All: undefined,
+  Planned: 'upcoming',
+  'In Progress': 'in_progress',
+  Completed: 'completed',
+  Missed: 'missed',
 };
 
 export const MyAuditsPanel: React.FC = () => {
   const { t } = useLanguage();
-  const [audits, setAudits] = useState<Audit[]>([]);
+  const [audits, setAudits] = useState<AuditRow[]>([]);
   const [filter, setFilter] = useState<AuditFilter>('All');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+  const userData = storedUser ? JSON.parse(storedUser) : null;
+  const username = userData?.username;
+
   const fetchAudits = () => {
+    if (!username) {
+      setErrorMsg(t('err_session') || 'Session expired.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setErrorMsg('');
-    // TODO: Replace with real API call once auditor endpoints exist
-    setTimeout(() => {
-      try {
-        let filtered = mockAudits;
-        if (filter !== 'All') {
-          filtered = mockAudits.filter((a) => a.status === filter);
-        }
-        setAudits(filtered);
-      } catch {
-        setErrorMsg(t('err_fetch_audits') || 'Failed to load audits.');
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
+
+    const statusParam = FILTER_TO_STATUS[filter];
+    api.audits.list({ auditorLogin: username, status: statusParam })
+      .then(async (res) => {
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setAudits(data.audits || []);
+      })
+      .catch(() => setErrorMsg(t('err_fetch_audits') || 'Failed to load audits.'))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchAudits();
   }, [filter]);
 
-  const handleOpen = (id: string) => {
-    // TODO: Navigate to audit detail or call real API
+  const handleOpen = (id: number) => {
     console.log('Open audit', id);
   };
 
-  const handleContinue = (id: string) => {
-    // TODO: Navigate to audit detail or call real API
+  const handleContinue = (id: number) => {
     console.log('Continue audit', id);
   };
 
-  const handleSubmit = (id: string) => {
-    // TODO: Call real API to submit audit
-    console.log('Submit audit', id);
-  };
+  const filters: AuditFilter[] = ['All', 'Planned', 'In Progress', 'Completed', 'Missed'];
 
-  const filters: AuditFilter[] = ['All', 'Planned', 'In Progress', 'Completed'];
+  const formatDate = (d: string) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString();
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.02)] border border-slate-100 p-6 md:p-8 animate-fade-in w-full flex flex-col gap-6">
@@ -115,63 +150,53 @@ export const MyAuditsPanel: React.FC = () => {
                 <th className="px-6 py-4">{t('col_audit') || 'Audit'}</th>
                 <th className="px-6 py-4">{t('col_plant') || 'Plant'}</th>
                 <th className="px-6 py-4">{t('col_type') || 'Type'}</th>
-                <th className="px-6 py-4">{t('col_due_date') || 'Due Date'}</th>
+                <th className="px-6 py-4">{t('col_date') || 'Date'}</th>
                 <th className="px-6 py-4">{t('col_status')}</th>
                 <th className="px-6 py-4 text-right">{t('col_actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {audits.map((a) => (
-                <tr key={a.id} className="hover:bg-slate-50/30 border-b border-slate-100 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-800 text-sm">{a.name}</div>
-                    <div className="text-slate-400 text-xs font-medium">{a.type}</div>
-                  </td>
-                  <td className="px-6 py-4 text-slate-600 text-sm font-medium">{a.plant}</td>
-                  <td className="px-6 py-4 text-slate-500 text-sm font-medium">{a.type}</td>
-                  <td className="px-6 py-4 text-slate-600 text-sm font-medium">{a.dueDate}</td>
-                  <td className="px-6 py-4 select-none">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${auditStatusStyles[a.status]}`}
-                    >
-                      {t(`audit_status_${a.status.replace(' ', '_')}`) || a.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right select-none">
-                    <div className="flex justify-end gap-1.5">
-                      {a.status === 'Planned' && (
-                        <button
-                          onClick={() => handleOpen(a.id)}
-                          className="px-2.5 py-1.5 text-xs font-bold bg-hutchinson-blue text-white rounded-lg hover:opacity-90 hover:shadow-sm transition-all duration-200 cursor-pointer"
-                        >
-                          {t('btn_open') || 'Open'}
-                        </button>
-                      )}
-                      {a.status === 'In Progress' && (
-                        <button
-                          onClick={() => handleContinue(a.id)}
-                          className="px-2.5 py-1.5 text-xs font-bold bg-hutchinson-blue text-white rounded-lg hover:opacity-90 hover:shadow-sm transition-all duration-200 cursor-pointer"
-                        >
-                          {t('btn_continue') || 'Continue'}
-                        </button>
-                      )}
-                      {a.status === 'Completed' && !a.submitted && (
-                        <button
-                          onClick={() => handleSubmit(a.id)}
-                          className="px-2.5 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 hover:shadow-sm transition-all duration-200 cursor-pointer"
-                        >
-                          {t('btn_submit') || 'Submit'}
-                        </button>
-                      )}
-                      {a.status === 'Completed' && a.submitted && (
-                        <span className="px-2.5 py-1.5 text-xs font-semibold text-slate-400">
-                          {t('submitted') || 'Submitted'}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {audits.map((a) => {
+                const displayStatus = STATUS_MAP[a.derivedStatus] || a.derivedStatus;
+                return (
+                  <tr key={a.id} className="hover:bg-slate-50/30 border-b border-slate-100 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-800 text-sm">{a.auditTypeName}</div>
+                      <div className="text-slate-400 text-xs font-medium">{a.auditTarget}</div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600 text-sm font-medium">#{a.plantId}</td>
+                    <td className="px-6 py-4 text-slate-500 text-sm font-medium">{a.auditShiftName || '—'}</td>
+                    <td className="px-6 py-4 text-slate-600 text-sm font-medium">{formatDate(a.startDate)}</td>
+                    <td className="px-6 py-4 select-none">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${auditStatusStyles[displayStatus]}`}
+                      >
+                        {t(`audit_status_${displayStatus.replace(' ', '_')}`) || displayStatus}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right select-none">
+                      <div className="flex justify-end gap-1.5">
+                        {displayStatus === 'Planned' && (
+                          <button
+                            onClick={() => handleOpen(a.id)}
+                            className="px-2.5 py-1.5 text-xs font-bold bg-hutchinson-blue text-white rounded-lg hover:opacity-90 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                          >
+                            {t('btn_open') || 'Open'}
+                          </button>
+                        )}
+                        {displayStatus === 'In Progress' && (
+                          <button
+                            onClick={() => handleContinue(a.id)}
+                            className="px-2.5 py-1.5 text-xs font-bold bg-hutchinson-blue text-white rounded-lg hover:opacity-90 hover:shadow-sm transition-all duration-200 cursor-pointer"
+                          >
+                            {t('btn_continue') || 'Continue'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

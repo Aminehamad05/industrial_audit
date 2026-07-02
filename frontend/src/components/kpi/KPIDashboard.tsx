@@ -153,9 +153,9 @@ export const KPIDashboard: React.FC<KPIDashboardProps> = ({
     return [
       { name: t('passed'), value: kpis.summary.passed, key: 'passed' },
       { name: t('kpi_eliminated'), value: b.eliminated, key: 'eliminated' },
-      { name: t('kpi_missed'), value: b.missed, key: 'missed' },
-      { name: t('upcoming_audits'), value: b.upcoming, key: 'upcoming' },
       { name: t('in_progress_audits'), value: b.inProgress, key: 'in_progress' },
+      { name: t('upcoming_audits'), value: b.upcoming, key: 'upcoming' },
+      { name: t('kpi_missed'), value: b.missed, key: 'missed' },
     ].filter((row) => row.value > 0);
   }, [kpis, t]);
 
