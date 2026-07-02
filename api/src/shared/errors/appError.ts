@@ -10,6 +10,16 @@ export class InvalidRoleError extends AppError {
     super(401, "Invalid Role");
   }
 }
+export class InvalidPlantError extends AppError {
+  constructor() {
+    super(401, "Invalid Plant");
+  }
+}
+export class MissingMentorNameError extends AppError {
+  constructor() {
+    super(401, "missing superVisor name");
+  }
+}
 export class InvalidCredentialsError extends AppError {
   constructor() {
     super(401, "Invalid username or password");

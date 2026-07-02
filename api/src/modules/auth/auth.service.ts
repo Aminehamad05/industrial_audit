@@ -3,10 +3,21 @@ import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
 import { prisma } from "../../db/prisma";
 import { env } from "../../config/env";
-import { InvalidCredentialsError,AccountBlockedError,AccountPendingError,AccountRejectedError, UsernameTakenError,InvalidRoleError,EmailTakenError } from "../../shared/errors/appError";
-import { ROLES, type JwtPayload, type Role } from "../../shared/types/auth";
+import {
+  InvalidCredentialsError,
+  AccountBlockedError,
+  AccountPendingError,
+  UsernameTakenError,
+  InvalidRoleError,
+  EmailTakenError,
+  InvalidPlantError,
+  MissingMentorNameError
+} from "../../shared/errors/appError";
+import { type JwtPayload, type Role } from "../../shared/types/auth";
 
 const BCRYPT_ROUNDS = 12;
+
+/* ----------------------------- TOKEN ----------------------------- */
 
 function issueToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
@@ -18,33 +29,44 @@ export function verifyToken(token: string): JwtPayload {
   return jwt.verify(token, env.JWT_SECRET) as JwtPayload;
 }
 
+/* ----------------------------- REGISTER ----------------------------- */
+
 export async function register(
   username: string,
   email: string,
   password: string,
   fullName: string,
-  role: Role
+  role: Role,
+  Plant: string,
+  mentorName?: string
 ) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedUsername = username.trim().toLowerCase();
+  const normalizedPlant = Plant.trim();
+
+  /* ---------------- CHECK EXISTING USER ---------------- */
+
   const existing = await prisma.aspnet_Users.findFirst({
-  where: {
-    OR: [
-      { Email: { equals: email.trim().toLowerCase() } },
-      { UserName: { equals: username.trim().toLowerCase() } },
-    ],
-  },
-});
+    where: {
+      OR: [
+        { Email: normalizedEmail },
+        { LoweredUserName: normalizedUsername },
+      ],
+    },
+  });
 
   if (existing) {
-  const emailTaken = existing.Email?.toLowerCase() === email.trim().toLowerCase();
-  const usernameTaken = existing.UserName?.toLowerCase() === username.trim().toLowerCase();
-  // throw appropriate error based on which matched
-  if(emailTaken){
-    throw new EmailTakenError()
-  }throw new UsernameTakenError()
-}
+    if (existing.Email?.toLowerCase() === normalizedEmail) {
+      throw new EmailTakenError();
+    }
+    throw new UsernameTakenError();
+  }
 
-  // Application + Role must exist before we can attach a user to them.
+  /* ---------------- APPLICATION ---------------- */
+
   const application = await prisma.aspnet_Applications.findFirstOrThrow();
+
+  /* ---------------- ROLE ---------------- */
 
   const roleRecord = await prisma.aspnet_Roles.findFirst({
     where: {
@@ -57,16 +79,33 @@ export async function register(
     throw new InvalidRoleError();
   }
 
+  /* ---------------- PASSWORD HASH ---------------- */
+
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-  // Wrap all related inserts in a transaction so a partial user never gets created.
+  /* ---------------- TRANSACTION ---------------- */
+
   const user = await prisma.$transaction(async (tx) => {
+    /* -------- PLANT -------- */
+
+    const plant = await tx.plant.findFirst({
+      where: {
+        designationPlant: normalizedPlant,
+      },
+    });
+
+    if (!plant) {
+      throw new InvalidPlantError();
+    }
+
+    /* -------- CREATE USER -------- */
+
     const newUser = await tx.aspnet_Users.create({
       data: {
         ApplicationId: application.ApplicationId,
-        UserName: username,
-        LoweredUserName: username.toLowerCase(),
-        Email: email,
+        UserName: username.trim(),
+        LoweredUserName: normalizedUsername,
+        Email: email.trim(),
         Name: fullName,
         passwordHash,
         status: "Pending",
@@ -75,15 +114,38 @@ export async function register(
       },
     });
 
+    /* -------- AUDITOR LINK -------- */
+
+    if (role === "AUDITOR") {
+      if (!mentorName) {
+        throw new MissingMentorNameError();
+      }
+
+      const supervisor = await tx.aspnet_Users.findFirstOrThrow({
+        where: {
+          Name: mentorName,
+        },
+      });
+
+      await tx.affectationUserUserChef.create({
+        data: {
+          UserId: newUser.UserId,
+          UserIdSup: supervisor.UserId,
+          idPlant:plant.idPlant
+      }});
+    }
+
+    /* -------- MEMBERSHIP -------- */
+
     await tx.aspnet_Membership.create({
       data: {
         ApplicationId: application.ApplicationId,
         UserId: newUser.UserId,
         Password: passwordHash,
         PasswordFormat: 1,
-        PasswordSalt: "n/a", // bcrypt embeds its own salt; this column is a legacy ASP.NET artifact
-        Email: email,
-        LoweredEmail: email.toLowerCase(),
+        PasswordSalt: "n/a",
+        Email: email.trim(),
+        LoweredEmail: normalizedEmail,
         IsApproved: false,
         IsLockedOut: false,
         CreateDate: new Date(),
@@ -96,6 +158,8 @@ export async function register(
         FailedPasswordAnswerAttemptWindowStart: new Date(),
       },
     });
+
+    /* -------- ROLE LINK -------- */
 
     await tx.aspnet_UsersInRoles.create({
       data: {
@@ -110,18 +174,26 @@ export async function register(
   return {
     id: user.UserId,
     fullName: user.Name || "",
-    role: role,
+    role,
     status: user.status,
   };
 }
 
+/* ----------------------------- LOGIN ----------------------------- */
+
 export async function login(email: string, password: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
   const user = await prisma.aspnet_Users.findFirst({
-    where: { Email: email },
+    where: {
+      Email: normalizedEmail,
+    },
     include: {
       aspnet_Membership: true,
       aspnet_UsersInRoles: {
-        include: { aspnet_Roles: true },
+        include: {
+          aspnet_Roles: true,
+        },
       },
     },
   });
@@ -135,47 +207,56 @@ export async function login(email: string, password: string) {
   if (!passwordValid) {
     throw new InvalidCredentialsError();
   }
+
+  /* ---------------- STATUS CHECK ---------------- */
+
   if (user.status === "Blocked") {
     throw new AccountBlockedError();
   }
 
   if (user.status === "Deleted") {
-    throw new InvalidCredentialsError(); // don't reveal the account ever existed
+    throw new InvalidCredentialsError();
   }
+
   if (user.status === "Pending") {
     throw new AccountPendingError();
   }
-  const role = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
-  if (!role) {
+
+  /* ---------------- ROLE ---------------- */
+
+  const roleName = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
+
+  if (!roleName) {
     throw new InvalidRoleError();
   }
+
+  /* ---------------- UPDATE ACTIVITY ---------------- */
+
   await prisma.aspnet_Users.update({
     where: { UserId: user.UserId },
     data: { LastActivityDate: new Date() },
   });
+
   if (user.aspnet_Membership) {
     await prisma.aspnet_Membership.update({
       where: { UserId: user.UserId },
       data: { LastLoginDate: new Date() },
     });
   }
-  const allowedRoles = ["ADMINISTRATOR", "AUDITOR", "SUPERVISOR"] as const;
-  type Role = typeof allowedRoles[number];
-  function isRole(role: string): role is Role {
-    return allowedRoles.includes(role as Role);
-  }
-  const roleName = user.aspnet_UsersInRoles[0]?.aspnet_Roles?.RoleName;
-   if (!roleName || !isRole(roleName)) {
-    throw new InvalidRoleError();
-  }
 
-  const token = issueToken({ userId: user.UserId, role:roleName });
+  /* ---------------- TOKEN ---------------- */
+
+  const token = issueToken({
+    userId: user.UserId,
+    role: roleName as Role,
+  });
+
   return {
     token,
     user: {
       id: user.UserId,
       fullName: user.Name || user.UserName || "",
-      role: role  as Role,
+      role: roleName,
     },
   };
 }

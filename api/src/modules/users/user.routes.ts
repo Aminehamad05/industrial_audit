@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { requireAuth, requireRole } from '../../middleware/auth.middleware';
 import { AppError } from '../../shared/errors/appError';
 import * as userService from './user.service';
-
+import {listAuditorSupervisors,setAuditorSupervisor,removeAuditorSupervisor} from "./user.service"
 export const adminRouter = Router();
 
 adminRouter.use(requireAuth, requireRole(['ADMINISTRATOR']));
@@ -51,3 +51,52 @@ adminRouter.delete('/users/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+adminRouter.get(
+  '/admin/users/:userId/supervisors',
+  requireAuth,
+  requireRole(['ADMINISTRATOR']),
+  async (req, res, next) => {
+    try {
+      const result = await listAuditorSupervisors(req.params.userId as string);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+adminRouter.put(
+  '/admin/users/:userId/supervisors/:plantId',
+  requireAuth,
+  requireRole(['ADMINISTRATOR']),
+  async (req, res, next) => {
+    try {
+      const { supervisorId } = req.body;
+      const result = await setAuditorSupervisor(
+        req.params.userId as string,
+        Number(req.params.plantId),
+        supervisorId
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+adminRouter.delete(
+  '/admin/users/:userId/supervisors/:plantId',
+  requireAuth,
+  requireRole(['ADMINISTRATOR']),
+  async (req, res, next) => {
+    try {
+      const result = await removeAuditorSupervisor(
+        req.params.userId as string,
+        Number(req.params.plantId)
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);

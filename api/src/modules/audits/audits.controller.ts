@@ -7,11 +7,17 @@ import { NotFoundError, DomainError } from '../../shared/errors/domain-error';
 
 export async function listAudits(req: Request, res: Response, next: NextFunction) {
   try {
-    const auditorId = typeof req.query.auditorId === 'string' ? req.query.auditorId : undefined;
+    const auditorLogin =
+      typeof req.query.auditorLogin === 'string' ? req.query.auditorLogin : undefined;
     const plantId = req.query.plantId ? Number(req.query.plantId) : undefined;
-    const status = req.query.status as 'upcoming' | 'in_progress' | 'completed' | undefined;
+    const status = req.query.status as
+      | 'upcoming'
+      | 'in_progress'
+      | 'completed'
+      | 'failed'
+      | undefined;
 
-    const audits = await auditsService.listAudits({ auditorId, plantId, status });
+    const audits = await auditsService.listAudits({ auditorLogin, plantId, status });
     const withStatus = audits.map((audit) => ({
       ...audit,
       derivedStatus: auditsService.deriveAuditStatus(audit),
@@ -37,6 +43,13 @@ export async function getAudit(req: Request, res: Response, next: NextFunction) 
 // orchestration point: validates auditor/supervisor/plant exist and resolves
 // the right denormalized strings, THEN hands fully-resolved data to
 // auditsService, which never has to know users/plants exist.
+//
+// NOTE: audits.auditorLogin / .supervisorLogin join to aspnet_Users.UserName
+// (FK_audits_auditor / FK_audits_supervisor), not a UserId column — there is
+// no auditorId/supervisorId field on the audits table. dto.auditorId /
+// dto.supervisorId below are aspnet_Users.UserId values used only to look up
+// the user; what actually gets stored on the audit is UserName + Name.
+//
 export async function createAndAssignAudit(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = req.body;
@@ -45,7 +58,7 @@ export async function createAndAssignAudit(req: Request, res: Response, next: Ne
     if (!auditor) {
       throw new NotFoundError(`Auditor ${dto.auditorId} not found`);
     }
-    if (auditor.role !== 'Auditor') {
+    if (!(await usersService.userHasRole(auditor.UserId, 'AUDITOR'))) {
       throw new DomainError(`User ${dto.auditorId} is not an Auditor`, 400);
     }
 
@@ -70,14 +83,12 @@ export async function createAndAssignAudit(req: Request, res: Response, next: Ne
       auditTargetSubarea: dto.auditTargetSubarea,
       auditTargetSection: dto.auditTargetSection,
       auditShiftName: dto.auditShiftName,
-      auditorId: auditor.id,
-      auditorLogin: auditor.email,
-      auditorFullName: auditor.full_name,
-      supervisorId: supervisor?.id,
-      supervisorName: supervisor?.full_name,
-      supervisorLogin: supervisor?.email,
+      auditorLogin: auditor.UserName as string,
+      auditorFullName: auditor.Name as string,
+      supervisorName: supervisor?.Name as string,
+      supervisorLogin: supervisor?.UserName ?? undefined,
       startDate: dto.startDate,
-      plantId: plant.id,
+      plantId: plant.idPlant,
       matricule: dto.matricule,
       scheduleId: dto.scheduleId,
     });
@@ -98,13 +109,11 @@ export async function reassignAuditor(req: Request, res: Response, next: NextFun
     if (!auditor) {
       throw new NotFoundError(`Auditor ${newAuditorId} not found`);
     }
-    if (auditor.role !== 'Auditor') {
+    if (!(await usersService.userHasRole(auditor.UserId, 'AUDITOR'))) {
       throw new DomainError(`User ${newAuditorId} is not an Auditor`, 400);
     }
 
-    const audit = await auditsService.reassignAuditor(
-      auditId, auditor.id, auditor.email, auditor.full_name
-    );
+    const audit = await auditsService.reassignAuditor(auditId, auditor.UserName!, auditor.Name!);
     res.json({ audit });
   } catch (err) {
     next(err);
@@ -127,9 +136,23 @@ export async function bulkCreateDetails(req: Request, res: Response, next: NextF
         !item.groupName ||
         !item.groupNameEng ||
         !item.question ||
-        !item.questionEng
+        !item.questionEng ||
+        typeof item.answerOk !== 'boolean' ||
+        typeof item.answerNok !== 'boolean' ||
+        typeof item.answerNc !== 'boolean' ||
+        typeof item.answerNa !== 'boolean'
       ) {
-        throw new DomainError('Each detail item must have groupPosition, groupName, groupNameEng, questionPosition, question, questionEng', 400);
+        throw new DomainError(
+          'Each detail item must have groupPosition, groupName, groupNameEng, questionPosition, question, questionEng, answerOk, answerNok, answerNc, answerNa',
+          400
+        );
+      }
+
+      if (item.ponderation !== undefined && typeof item.ponderation !== 'number') {
+        throw new DomainError('ponderation must be a number when provided', 400);
+      }
+      if (item.eliminatoire !== undefined && typeof item.eliminatoire !== 'boolean') {
+        throw new DomainError('eliminatoire must be a boolean when provided', 400);
       }
     }
 
@@ -146,7 +169,12 @@ export async function bulkCreateDetails(req: Request, res: Response, next: NextF
 export async function getDashboardAudits(req: Request, res: Response, next: NextFunction) {
   try {
     const plantId = req.query.plantId ? Number(req.query.plantId) : undefined;
-    const status = req.query.status as 'upcoming' | 'in_progress' | 'completed' | undefined;
+    const status = req.query.status as
+      | 'upcoming'
+      | 'in_progress'
+      | 'completed'
+      | 'failed'
+      | undefined;
 
     const audits = await auditsService.listAudits({ plantId, status });
     const result = audits.map((audit) => ({
@@ -158,6 +186,7 @@ export async function getDashboardAudits(req: Request, res: Response, next: Next
       startDate: audit.startDate,
       endDate: audit.endDate,
       score: audit.score,
+      eliminated: audit.eliminated,
       status: auditsService.deriveAuditStatus(audit),
     }));
 

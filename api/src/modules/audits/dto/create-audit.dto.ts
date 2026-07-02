@@ -7,7 +7,6 @@ export interface CreateAuditDto {
   auditTargetSubarea?: string;
   auditTargetSection?: string;
   auditShiftName?: string;
-  auditorId: string;
   auditorLogin: string;
   auditorFullName: string;
   supervisorId?: string;
@@ -17,4 +16,5 @@ export interface CreateAuditDto {
   plantId: number;
   matricule?: string;
   scheduleId?: number;
+  
 }
